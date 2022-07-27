@@ -1,0 +1,4 @@
+pyphonetics==0.5.3
+geopy==2.2.0
+spacy==3.0.6
+spacy-entity-linker==1.0.1
