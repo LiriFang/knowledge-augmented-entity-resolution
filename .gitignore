@@ -164,5 +164,7 @@ cython_debug/
 src/
 models/
 
+# data/
 data/ditto
 data/refined
+
