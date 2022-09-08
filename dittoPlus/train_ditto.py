@@ -69,6 +69,8 @@ if __name__=="__main__":
     if hp.dk is not None:
         if hp.dk == 'product':
             injector = ProductDKInjector(config, hp.dk)
+        if hp.dk == 'entityLinking':
+            injector = EntityLinkingDKInjector(config, hp.dk)
         else:
             injector = GeneralDKInjector(config, hp.dk)
 

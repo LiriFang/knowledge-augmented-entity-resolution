@@ -168,12 +168,14 @@ class EntityLinkingDKInjector(DKInjector):
         # self.nlp = spacy.load('en_core_web_lg')
         # load refined model here
         from refined.processor import Refined
+        print("Loading RefinED model...")
         self.refined = Refined.from_pretrained(model_name='wikipedia_model', 
                             entity_set="wikipedia",
                             data_dir="/home/yirenl2/PLM_DC/data-preparator-for-EM/data/refined/wikipedia", 
                             download_files=True,
                             use_precomputed_descriptions=True,
-                            device="cuda:0")
+                            # device="cuda:0",
+                            )
 
     def transform(self, entry):
         """Transform a data entry.
