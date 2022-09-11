@@ -1,5 +1,6 @@
 import re
 import pandas as pd
+from collections import defaultdict
 
 
 def method2_test():
@@ -64,6 +65,47 @@ def method2():
     df_3 = pd.DataFrame({'flag': ds_3})
     return df_1, df_2, df_3
 
+def str2col(s):
+    col_names = []
+    val_list = []
+    columns = s.split('COL')
+    # print(columns)
+    for col in columns[1:]:
+        vals = col.split('VAL')
+        # print(vals)
+        col_name = vals[0].strip()
+        val = vals[1].strip()
+
+
+        col_names.append(col_name)
+        val_list.append(val)
+    assert len(col_names) == len(val_list), "number of col_name is different from the number of vals"
+    return col_names, val_list
+
+
+def method3(input_fn:str):
+    col_names_1 = []
+    col_names_2 = []
+    ds_1 = defaultdict(list)
+    ds_2 = defaultdict(list)
+    i = 0
+
+    for line_p in open(input_fn):
+        line = line_p.strip()
+        items = line.split('\t')
+        # print(len(items))
+        col_names_1, val_list_1 = str2col(items[0])
+        col_names_2, val_list_2 = str2col(items[1])
+
+        ds_1[i] = val_list_1
+        ds_2[i] = val_list_2
+        i+=1
+    df_1 = pd.DataFrame.from_dict(ds_1, orient='index', columns=col_names_1)
+    df_2 = pd.DataFrame.from_dict(ds_2, orient='index', columns=col_names_2)
+    prefix = input_fn.split('.')[0]
+    df_1.to_csv(prefix+'-1.csv')
+    df_2.to_csv(prefix+'-2.csv')
+    return df_1, df_2
 
 def main1():
     pattern_1 = re.compile(r'\s*((COL\s+(.*?)\s+VAL\s+(.*?)\s+)*)([01])$')
@@ -85,8 +127,16 @@ def main1():
 
 
 def main():
-    df_1, df_2, df_3 = method2()
-    print(df_1)
+    # df_1, df_2, df_3 = method2()
+
+    df_1, df_2 = method3('test.txt')
+    print('df_1')
+    print(df_1.head(), len(df_1))
+    df_1.to_csv('test_1.csv')
+    print('df_2')
+    print(df_2.head(), len(df_2))
+    # print('df_3')
+    # print(df_3.head(), len(df_3))
 
 
 if __name__ == '__main__':
