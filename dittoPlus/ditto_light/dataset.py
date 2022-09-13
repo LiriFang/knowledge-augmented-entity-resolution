@@ -68,8 +68,8 @@ class DittoDataset(data.Dataset):
         left = self.pairs[idx][0]
         right = self.pairs[idx][1]
 
-        print(left + right)
-        raise NotImplementedError
+        # print(left + right)
+        # raise NotImplementedError
 
         # left + right
         x = self.tokenizer.encode(text=left,
