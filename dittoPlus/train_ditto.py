@@ -15,7 +15,7 @@ from ditto_light.ditto import train
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--task", type=str, default="Structured/Beer")
+    parser.add_argument("--task", type=str, default="Textual/Abt-Buy")
     parser.add_argument("--run_id", type=int, default=0)
     parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--max_len", type=int, default=256)
@@ -62,9 +62,9 @@ if __name__=="__main__":
     # summarize the sequences up to the max sequence length
     if hp.summarize:
         summarizer = Summarizer(config, lm=hp.lm)
-        trainset = summarizer.transform_file(trainset, max_len=hp.max_len)
-        validset = summarizer.transform_file(validset, max_len=hp.max_len)
-        testset = summarizer.transform_file(testset, max_len=hp.max_len)
+        trainset = summarizer.transform_file(trainset, max_len=hp.max_len, overwrite=True)
+        validset = summarizer.transform_file(validset, max_len=hp.max_len, overwrite=True)
+        testset = summarizer.transform_file(testset, max_len=hp.max_len, overwrite=True)
 
     if hp.dk is not None:
         if hp.dk == 'product':
@@ -74,9 +74,9 @@ if __name__=="__main__":
         else:
             injector = GeneralDKInjector(config, hp.dk)
 
-        trainset = injector.transform_file(trainset)
-        validset = injector.transform_file(validset)
-        testset = injector.transform_file(testset)
+        trainset = injector.transform_file(trainset, overwrite=True)
+        validset = injector.transform_file(validset, overwrite=True)
+        testset = injector.transform_file(testset, overwrite=True)
 
     # load train/dev/test sets
     train_dataset = DittoDataset(trainset,
