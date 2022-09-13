@@ -174,7 +174,7 @@ class EntityLinkingDKInjector(DKInjector):
                             data_dir="/home/yirenl2/PLM_DC/data-preparator-for-EM/data/refined/wikipedia", 
                             download_files=True,
                             use_precomputed_descriptions=True,
-                            # device="cuda:0",
+                            device="cuda:0",
                             )
 
     def transform(self, entry):
@@ -193,7 +193,7 @@ class EntityLinkingDKInjector(DKInjector):
 
         span = self.refined.process_text(entry)
         spanType = span.pred_types[0][1]
-        text = text[:span.start] + '<' + spanType + '>' + text[span.start:span.start + span.ln] + '</' + spanType + '>' + text[span.start + span.ln:]
+        text = entry[:span.start] + '<' + spanType + '>' + entry[span.start:span.start + span.ln] + '</' + spanType + '>' + entry[span.start + span.ln:]
 
         print(text)
         raise NotImplementedError
