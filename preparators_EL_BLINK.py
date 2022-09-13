@@ -63,6 +63,9 @@ samples = _annotate(ner_model, [text])
 ## TODO: Convert samples to BLINK input
 
 
+
+assert False, 'not implemented'
+
 data_to_link = [ {
                     "id": 0,
                     "label": "unknown",
