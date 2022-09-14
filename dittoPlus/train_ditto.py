@@ -71,6 +71,8 @@ if __name__=="__main__":
             injector = ProductDKInjector(config, hp.dk)
         if hp.dk == 'entityLinking':
             injector = EntityLinkingDKInjector(config, hp.dk)
+        if hp.dk == 'sherlock':
+            injector = SherlockDKInjector(config, hp.dk)
         else:
             injector = GeneralDKInjector(config, hp.dk)
 
