@@ -222,7 +222,8 @@ class EntityLinkingDKInjector(DKInjector):
                     span = spans[i]
                     if len(span.pred_types) > 0:
                         spanType = span.pred_types[0][1]
-                        text = text[:span.start] + '<' + spanType + '>' + entry[span.start:span.start + span.ln] + '</' + spanType + '>' + entry[span.start + span.ln:]
+                        # text = text[:span.start] + '<' + spanType + '>' + entry[span.start:span.start + span.ln] + '</' + spanType + '>' + entry[span.start + span.ln:]
+                        text = text[:span.start] + entry[span.start:span.start + span.ln] + ' (' + spanType + ')' + entry[span.start + span.ln:]
                     else:
                         text = entry
                 valuesTagged.append(text)

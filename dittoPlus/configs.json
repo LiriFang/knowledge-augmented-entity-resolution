@@ -6,5 +6,29 @@
   "trainset": "../data/ditto/er_magellan/Textual/Abt-Buy/train.txt",
   "validset": "../data/ditto/er_magellan/Textual/Abt-Buy/valid.txt",
   "testset": "../data/ditto/er_magellan/Textual/Abt-Buy/test.txt"
+  },
+  {
+    "name": "Dirty/DBLP-GoogleScholar",
+    "task_type": "classification",
+    "vocab": ["0", "1"],
+    "trainset": "../data/ditto/er_magellan/Dirty/DBLP-GoogleScholar/train.txt",
+    "validset": "../data/ditto/er_magellan/Dirty/DBLP-GoogleScholar/valid.txt",
+    "testset": "../data/ditto/er_magellan/Dirty/DBLP-GoogleScholar/test.txt"
+  },
+  {
+    "name": "Dirty/iTunes-Amazon",
+    "task_type": "classification",
+    "vocab": ["0", "1"],
+    "trainset": "../data/ditto/er_magellan/Dirty/iTunes-Amazon/train.txt",
+    "validset": "../data/ditto/er_magellan/Dirty/iTunes-Amazon/valid.txt",
+    "testset": "../data/ditto/er_magellan/Dirty/iTunes-Amazon/test.txt"
+  },
+  {
+    "name": "computers",
+    "task_type": "classification",
+    "vocab": ["0", "1"],
+    "trainset": "../data/ditto/wdc/computers/train.txt.medium",
+    "validset": "../data/ditto/wdc/computers/valid.txt.medium",
+    "testset": "../data/ditto/wdc/computers/test.txt"
   }
 ]
