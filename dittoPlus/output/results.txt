@@ -1,0 +1,48 @@
+er_magellan/Dirty/DBLP-GoogleScholar
+ditto:
+epoch 20: dev_f1=0.9510945505356311, f1=0.9446768944676894, best_f1=0.9442896935933148
+
+ditto + EL (<TAG>xxx</TAG>):
+
+
+ditto + EL (xxx (TAG)):
+epoch 15: dev_f1=0.946938775510204, f1=0.9403254972875226, best_f1=0.9457943925233645
+
+
+er_magellan/Textual/Abt-Buy
+ditto:
+epoch 20: dev_f1=0.7962529274004684, f1=0.8072562358276643, best_f1=0.8240963855421687
+
+ditto + EL (<TAG>xxx</TAG>):
+epoch 20: dev_f1=0.8447837150127225, f1=0.8098765432098766, best_f1=0.8249400479616307
+
+ditto + EL (xxx (TAG)):
+epoch 20: dev_f1=0.837696335078534, f1=0.8129675810473815, best_f1=0.8312958435207823
+
+
+er_magellan/Dirty/iTunes-Amazon (the data amount is small)
+ditto:
+epoch 20: dev_f1=0.6415094339622641, f1=0.6399999999999999, best_f1=0.6250000000000001
+
+ditto + EL (<TAG>xxx</TAG>):
+
+
+ditto + EL (xxx (TAG)):
+epoch 20: dev_f1=0.6250000000000001, f1=0.7083333333333334, best_f1=0.72
+
+
+
+wdc/computers
+ditto:
+epoch 20: dev_f1=0.898021308980213, f1=0.8748019017432648, best_f1=0.8661417322834646
+
+ditto + EL (<TAG>xxx</TAG>):
+
+
+ditto + EL (xxx (TAG)):
+epoch 20: dev_f1=0.888558692421991, f1=0.8567073170731707, best_f1=0.8532110091743119
+
+
+
+
+% maybe only some specific word or phrases need to be explained using Wikidata?
