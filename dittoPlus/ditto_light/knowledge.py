@@ -316,18 +316,18 @@ class SherlockDKInjector(DKInjector):
         df_3 = pd.DataFrame({'flag': tails})
         return df_1, df_2, df_3
 
-    def prev_transform(self, df, cols, new_df):
+    def prev_transform(self, df, cols, new_df, predict_labels):
         """
         Before combining two datasets:
-        Manually serialized the rows
-        Save as a new DataFramew 
+        Manually serialized the rows + inject predict labels 
+        Save as a new DataFrame
         """
         for index, row in df.iterrows():
-            for col in cols:
+            for i,col in enumerate(cols):
                 old_value = row[col]
                 # TODO: There is no need to do any "normalization" in this step
                 # WE have already prepared the dataset 
-                new_value = f"COL {col} NUM VAL {old_value}"
+                new_value = f"COL {col} {predict_labels[i]} VAL {old_value}"
                 # print(new_value)
                 new_df.at[index, col] = new_value
                 # .....new_df 
@@ -361,7 +361,6 @@ class SherlockDKInjector(DKInjector):
                 model = SherlockModel()
                 model.initialize_model_from_json(with_weights=True, model_id="sherlock")
                 values = pd.Series(df1.to_numpy().T.tolist(), name="values")
-                # print(df1.to_numpy().T.shape)
                 extract_features(
                     "../temporary_1.csv",
                     values
@@ -376,27 +375,16 @@ class SherlockDKInjector(DKInjector):
                     "../temporary_2.csv",
                     values
                 )
-                # model_2 = SherlockModel()
-                # model.initialize_model_from_json(with_weights=True, model_id="sherlock")
-
                 feature_vectors_2 = pd.read_csv("../temporary_2.csv", dtype=np.float32)
                 predicted_labels_2 = model.predict(feature_vectors_2, "sherlock")
 
                 cols_1 = list(df1.columns)
                 annotate_df1 = pd.DataFrame(columns=cols_1) # embed first 
-                df1_serialized = self.prev_transform(df1, cols_1, annotate_df1)
-                print(cols_1)
-                print(predicted_labels_1)
-                raise NotImplementedError
-                # print(df1.ABV)
+                df1_serialized = self.prev_transform(df1, cols_1, annotate_df1, predicted_labels_1)
 
                 cols_2 = list(df2.columns)
                 annotate_df2 = pd.DataFrame(columns=cols_2) # embed first 
-                df2_serialized = self.prev_transform(df2, cols_2, annotate_df2)
-
-                # print(cols_2)
-                # print(predicted_labels_2)
-                # raise NotImplementedError
+                df2_serialized = self.prev_transform(df2, cols_2, annotate_df2, predicted_labels_2)
 
                 assert len(df1_serialized) == len(df2_serialized)
                 for i in range(len(df1_serialized)):
