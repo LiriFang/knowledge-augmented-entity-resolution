@@ -12,6 +12,18 @@ import spacy
 from collections import Counter
 
 from tqdm import tqdm
+from sherlock import helpers
+from sherlock.deploy.model import SherlockModel
+from sherlock.functional import extract_features_to_csv
+from sherlock.features.paragraph_vectors import initialise_pretrained_model, initialise_nltk
+from sherlock.features.preprocessing import (
+    extract_features,
+    convert_string_lists_to_lists,
+    prepare_feature_extraction,
+    load_parquet_values,
+)
+from sherlock.features.word_embeddings import initialise_word_embeddings
+
 
 class DKInjector:
     """Inject domain knowledge to the data entry pairs.
@@ -252,17 +264,6 @@ class SherlockDKInjector(DKInjector):
 
     """
     def initialize(self):
-        from sherlock import helpers
-        from sherlock.deploy.model import SherlockModel
-        from sherlock.functional import extract_features_to_csv
-        from sherlock.features.paragraph_vectors import initialise_pretrained_model, initialise_nltk
-        from sherlock.features.preprocessing import (
-            extract_features,
-            convert_string_lists_to_lists,
-            prepare_feature_extraction,
-            load_parquet_values,
-        )
-        from sherlock.features.word_embeddings import initialise_word_embeddings
 
         """Initialize spacy"""
         # self.nlp = spacy.load('en_core_web_lg')
@@ -332,7 +333,7 @@ class SherlockDKInjector(DKInjector):
                 # .....new_df 
         return new_df
 
-    def transform_file(self, input_fn, overwrite=False):
+    def transform_file(self, input_fn, overwrite=True):
         """Transform all lines of a tsv file.
 
         Run the knowledge injector. If the output already exists, just return the file name.
@@ -357,29 +358,29 @@ class SherlockDKInjector(DKInjector):
                 # for index, row in df1.iterrows():
                 #     print(row)
 
-                model_1 = SherlockModel()
-                model_1.initialize_model_from_json(with_weights=True, model_id="sherlock")
-
+                model = SherlockModel()
+                model.initialize_model_from_json(with_weights=True, model_id="sherlock")
+                values = pd.Series(df1.to_numpy().T.tolist(), name="values")
+                # print(df1.to_numpy().T.shape)
                 extract_features(
                     "../temporary_1.csv",
-                    df1
+                    values
                 )
                 feature_vectors_1 = pd.read_csv("../temporary_1.csv", dtype=np.float32)
-                print(feature_vectors_1)
-                print(len(feature_vectors_1))
-
-                raise NotImplementedError
-                predicted_labels_1 = model_1.predict(feature_vectors_1, "sherlock")
+                # print(feature_vectors_1)
+                # raise NotImplementedError
+                predicted_labels_1 = model.predict(feature_vectors_1, "sherlock")
                 
+                values = pd.Series(df2.to_numpy().T.tolist(), name="values")
                 extract_features(
                     "../temporary_2.csv",
-                    df2
+                    values
                 )
-                model_2 = SherlockModel()
-                model_2.initialize_model_from_json(with_weights=True, model_id="sherlock")
+                # model_2 = SherlockModel()
+                # model.initialize_model_from_json(with_weights=True, model_id="sherlock")
 
                 feature_vectors_2 = pd.read_csv("../temporary_2.csv", dtype=np.float32)
-                predicted_labels_2 = model_2.predict(feature_vectors_2, "sherlock")
+                predicted_labels_2 = model.predict(feature_vectors_2, "sherlock")
 
                 cols_1 = list(df1.columns)
                 annotate_df1 = pd.DataFrame(columns=cols_1) # embed first 
