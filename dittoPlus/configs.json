@@ -30,5 +30,13 @@
     "trainset": "../data/ditto/wdc/computers/train.txt.medium",
     "validset": "../data/ditto/wdc/computers/valid.txt.medium",
     "testset": "../data/ditto/wdc/computers/test.txt"
-  }
+  },
+  {
+    "name": "Structured/DBLP-GoogleScholar",
+    "task_type": "classification",
+    "vocab": ["0", "1"],
+    "trainset": "../data/er_magellan/Structured/DBLP-GoogleScholar/train.txt",
+    "validset": "../data/er_magellan/Structured/DBLP-GoogleScholar/valid.txt",
+    "testset": "../data/er_magellan/Structured/DBLP-GoogleScholar/test.txt"
+    }
 ]
