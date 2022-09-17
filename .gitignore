@@ -172,3 +172,5 @@ dittoPlus/data
 events.out.tfevents*
 temporary_*.csv
 *.dk
+dittoPlus/par_vec_trained_*
+glove.6B.50d.txt

@@ -1,3 +1,6 @@
+import gc
+import time
+
 import os
 import argparse
 import json
@@ -68,8 +71,8 @@ if __name__=="__main__":
         testset = summarizer.transform_file(testset, max_len=hp.max_len, overwrite=True)
 
 
-    if hp.ct is not None:
-        pass
+    # if hp.ct is not None:
+    #     pass
 
     if hp.dk is not None:
         if hp.dk == 'product':
@@ -85,6 +88,13 @@ if __name__=="__main__":
         validset = injector.transform_file(validset, overwrite=True)
         testset = injector.transform_file(testset, overwrite=True)
 
+        if hp.dk == 'sherlock':
+            del injector
+            gc.collect()
+        
+        print("sherlock deleted...") # check if there are other refernec to the model, not freed...
+        time.sleep(10)
+
     # load train/dev/test sets
     train_dataset = DittoDataset(trainset,
                                    lm=hp.lm,
@@ -93,6 +103,8 @@ if __name__=="__main__":
                                    da=hp.da)
     valid_dataset = DittoDataset(validset, lm=hp.lm)
     test_dataset = DittoDataset(testset, lm=hp.lm)
+
+
 
     # train and evaluate the model
     train(train_dataset,
