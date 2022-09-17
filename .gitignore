@@ -170,3 +170,5 @@ data/refined
 
 dittoPlus/data
 events.out.tfevents*
+temporary_*.csv
+*.dk

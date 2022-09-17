@@ -2,11 +2,29 @@ import numpy as np
 import csv
 import sys
 import os
+import re
+
+import pandas as pd
+import pyarrow as pa 
+import gc
+
 import spacy
 
 from collections import Counter
 
 from tqdm import tqdm
+from sherlock import helpers
+from sherlock.deploy.model import SherlockModel
+from sherlock.functional import extract_features_to_csv
+from sherlock.features.paragraph_vectors import initialise_pretrained_model, initialise_nltk
+from sherlock.features.preprocessing import (
+    extract_features,
+    convert_string_lists_to_lists,
+    prepare_feature_extraction,
+    load_parquet_values,
+)
+from sherlock.features.word_embeddings import initialise_word_embeddings
+
 
 class DKInjector:
     """Inject domain knowledge to the data entry pairs.
@@ -222,7 +240,8 @@ class EntityLinkingDKInjector(DKInjector):
                     span = spans[i]
                     if len(span.pred_types) > 0:
                         spanType = span.pred_types[0][1]
-                        text = text[:span.start] + '<' + spanType + '>' + entry[span.start:span.start + span.ln] + '</' + spanType + '>' + entry[span.start + span.ln:]
+                        # text = text[:span.start] + '<' + spanType + '>' + entry[span.start:span.start + span.ln] + '</' + spanType + '>' + entry[span.start + span.ln:]
+                        text = text[:span.start] + entry[span.start:span.start + span.ln] + ' (' + spanType + ')' + entry[span.start + span.ln:]
                     else:
                         text = entry
                 valuesTagged.append(text)
@@ -237,4 +256,149 @@ class EntityLinkingDKInjector(DKInjector):
         return res.strip()
         # raise NotImplementedError
         
+
+
+class SherlockDKInjector(DKInjector):
+    """
+    The domain-knowledge inferred by Sherlock
+    Deep Learning system 
+
+    """
+    def initialize(self):
+
+        """Initialize spacy"""
+        # self.nlp = spacy.load('en_core_web_lg')
+        prepare_feature_extraction()
+        initialise_word_embeddings()
+        initialise_pretrained_model(400)
+        # 400 => dimension 
+        initialise_nltk()
+
+    def sep_ds(self, col_names, ds):
+        """
+        Separate the combined and serialized dataset to the original datasets
+        use this as the input for Sherlock
+        """
+        dict_prep = {}
+        for inner_value in ds:
+            # [(' title ', ' query optimization by predicate move-around '), (' authors ', ' inderpal singh mumick , alon y. levy , yehoshua sagiv '), (' venue ', ' vldb '), (' year ', ' 1994 \t')]
+            for k, v in inner_value:
+                col_name = k.strip()
+                col_value = v.strip()
+                dict_prep.setdefault(col_name, []).append(col_value)
+        return pd.DataFrame(dict_prep)
+
+    def create_input_ds(self, ds_f):
+        col_names_1 = []
+        col_names_2 = []
+        ds_1 = []
+        ds_2 = []
+        ds_3 = []
+        tails = []
+        for line_p in open(ds_f):
+            pattern = re.compile(r'(COL|VAL)')
+            line = line_p.rstrip()
+            body = line[:-1]
+            tail = line[-1]
+            tails.append(int(tail))
+            items = pattern.split(body)[1:]
+            assert len(items) % 4 == 0
+            pairs = []
+            for i in range(len(items) // 4):
+                pairs.append((items[i * 4 + 1], items[i * 4 + 3]))
+            pair_1 = pairs[:len(pairs) // 2]
+            pair_2 = pairs[len(pairs) // 2:]
+            col_names_1 = [v[0].strip() for v in pair_1]
+            col_names_2 = [v[0].strip() for v in pair_2]
+            ds_1.append(pair_1)
+            ds_2.append(pair_2)
+        df_1 = self.sep_ds(col_names_1, ds_1)
+        df_2 = self.sep_ds(col_names_2, ds_2)
+        df_3 = pd.DataFrame({'flag': tails})
+        return df_1, df_2, df_3
+
+    def prev_transform(self, df, cols, new_df, predict_labels):
+        """
+        Before combining two datasets:
+        Manually serialized the rows + inject predict labels 
+        Save as a new DataFrame
+        """
+        for index, row in df.iterrows():
+            for i,col in enumerate(cols):
+                old_value = row[col]
+                # TODO: There is no need to do any "normalization" in this step
+                # WE have already prepared the dataset 
+                new_value = f"COL {col} {predict_labels[i]} VAL {old_value}"
+                # print(new_value)
+                new_df.at[index, col] = new_value
+                # .....new_df 
+        return new_df
+
+    def transform_file(self, input_fn, overwrite=True):
+        """Transform all lines of a tsv file.
+
+        Run the knowledge injector. If the output already exists, just return the file name.
+
+        Args:
+            input_fn (str): the input file name
+            overwrite (bool, optional): if true, then overwrite any cached output
+
+        Returns:
+            str: the output file name
+        """
+        out_fn = input_fn + '.dk'
+        if not os.path.exists(out_fn) or \
+            os.stat(out_fn).st_size == 0 or overwrite:
+
+            with open(out_fn, 'w') as fout:
+                df1, df2, df3 = self.create_input_ds(input_fn) # the first dataset, the second dataset, and the flag
+                # Use Sherlock to predict the column types 
+                # then annotate each cell across the columns: 
+                # returns: list of predicted labels: e.g., array(['person', 'city', 'address'], dtype=object)
+                # df1: the first dataset; df2: the second dataset; df3: the pairing result
+                # for index, row in df1.iterrows():
+                #     print(row)
+
+                model = SherlockModel()
+                model.initialize_model_from_json(with_weights=True, model_id="sherlock")
+                values = pd.Series(df1.to_numpy().T.tolist(), name="values")
+                extract_features(
+                    "../temporary_1.csv",
+                    values
+                )
+                feature_vectors_1 = pd.read_csv("../temporary_1.csv", dtype=np.float32)
+                # print(feature_vectors_1)
+                # raise NotImplementedError
+                predicted_labels_1 = model.predict(feature_vectors_1, "sherlock")
+                
+                values = pd.Series(df2.to_numpy().T.tolist(), name="values")
+                extract_features(
+                    "../temporary_2.csv",
+                    values
+                )
+                feature_vectors_2 = pd.read_csv("../temporary_2.csv", dtype=np.float32)
+                predicted_labels_2 = model.predict(feature_vectors_2, "sherlock")
+
+                cols_1 = list(df1.columns)
+                annotate_df1 = pd.DataFrame(columns=cols_1) # embed first 
+                df1_serialized = self.prev_transform(df1, cols_1, annotate_df1, predicted_labels_1)
+
+                cols_2 = list(df2.columns)
+                annotate_df2 = pd.DataFrame(columns=cols_2) # embed first 
+                df2_serialized = self.prev_transform(df2, cols_2, annotate_df2, predicted_labels_2)
+
+                assert len(df1_serialized) == len(df2_serialized)
+                del model
+                gc.collect()
+                for i in range(len(df1_serialized)):
+                    entry0 = ''
+                    entry1 = ''
+                    fir_row = df1_serialized.iloc[i]
+                    entry0 += ' '.join(fir_row)
+                    sec_row = df2_serialized.iloc[i]
+                    entry1 += ' '.join(sec_row)
+                    entry2 = int(df3.loc[i, 'flag'])
+                    fout.write(entry0 + '\t' + entry1 + '\t' + str(entry2) + '\n')
+                    # print(f"{entry0} + '\t' + {entry1} + '\t' + {entry2}")
+        return out_fn
 
