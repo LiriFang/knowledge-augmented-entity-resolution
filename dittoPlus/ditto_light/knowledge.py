@@ -6,6 +6,7 @@ import re
 
 import pandas as pd
 import pyarrow as pa 
+import gc
 
 import spacy
 
@@ -387,6 +388,8 @@ class SherlockDKInjector(DKInjector):
                 df2_serialized = self.prev_transform(df2, cols_2, annotate_df2, predicted_labels_2)
 
                 assert len(df1_serialized) == len(df2_serialized)
+                del model
+                gc.collect()
                 for i in range(len(df1_serialized)):
                     entry0 = ''
                     entry1 = ''
