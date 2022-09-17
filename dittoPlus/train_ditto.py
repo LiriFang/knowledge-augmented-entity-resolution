@@ -31,6 +31,7 @@ if __name__=="__main__":
     parser.add_argument("--dk", type=str, default=None)
     parser.add_argument("--summarize", dest="summarize", action="store_true")
     parser.add_argument("--size", type=int, default=None)
+    parser.add_argument("--device", type=str, default='cuda', help='cpu or cuda')
 
     hp = parser.parse_args()
 
@@ -65,6 +66,10 @@ if __name__=="__main__":
         trainset = summarizer.transform_file(trainset, max_len=hp.max_len, overwrite=True)
         validset = summarizer.transform_file(validset, max_len=hp.max_len, overwrite=True)
         testset = summarizer.transform_file(testset, max_len=hp.max_len, overwrite=True)
+
+
+    if hp.ct is not None:
+        pass
 
     if hp.dk is not None:
         if hp.dk == 'product':
