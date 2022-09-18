@@ -5,6 +5,8 @@ import sys
 import torch
 import numpy as np
 import random
+import gc
+import time
 
 sys.path.insert(0, "Snippext_public")
 
@@ -59,6 +61,10 @@ if __name__=="__main__":
     trainset = config['trainset']
     validset = config['validset']
     testset = config['testset']
+    if hp.dk == 'doduo':
+        trainset = trainset+'.doduo'
+        textset = trainset + '.doduo'
+        validset = trainset+ 'doduo'
 
     # summarize the sequences up to the max sequence length
     if hp.summarize:
@@ -68,10 +74,10 @@ if __name__=="__main__":
         testset = summarizer.transform_file(testset, max_len=hp.max_len, overwrite=True)
 
 
-    if hp.ct is not None:
-        pass
+    # if hp.ct is not None:
+    #     pass
 
-    if hp.dk is not None:
+    if hp.dk is not None or hp.dk != "doduo":
         if hp.dk == 'product':
             injector = ProductDKInjector(config, hp.dk)
         if hp.dk == 'entityLinking':
@@ -84,6 +90,14 @@ if __name__=="__main__":
         trainset = injector.transform_file(trainset, overwrite=True)
         validset = injector.transform_file(validset, overwrite=True)
         testset = injector.transform_file(testset, overwrite=True)
+
+    if hp.dk == 'sherlock':
+        del injector
+        gc.collect()
+
+    print("sherlock deleted...")  # check if there are other refernec to the model, not freed...
+    time.sleep(10)
+
 
     # load train/dev/test sets
     train_dataset = DittoDataset(trainset,
