@@ -8,8 +8,6 @@ import sys
 import torch
 import numpy as np
 import random
-import gc
-import time
 
 from tensorflow.keras import backend as K 
 import tensorflow as tf
@@ -101,15 +99,15 @@ if __name__=="__main__":
         validset = injector.transform_file(validset, overwrite=True)
         testset = injector.transform_file(testset, overwrite=True)
 
-    if hp.dk == 'sherlock':
-        K.clear_session()
-        del injector.model
-        del injector
-        K.clear_session()
-        for _ in range(10): gc.collect()
+    # if hp.dk == 'sherlock':
+    #     K.clear_session()
+    #     del injector.model
+    #     del injector
+    #     K.clear_session()
+    #     for _ in range(10): gc.collect()
 
-        print("sherlock deleted...")  # check if there are other refernec to the model, not freed...
-        time.sleep(10)
+    #     print("sherlock deleted...")  # check if there are other refernec to the model, not freed...
+    #     time.sleep(10)
 
 
     # load train/dev/test sets

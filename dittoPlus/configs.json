@@ -38,5 +38,13 @@
     "trainset": "../data/er_magellan/Structured/DBLP-GoogleScholar/train.txt",
     "validset": "../data/er_magellan/Structured/DBLP-GoogleScholar/valid.txt",
     "testset": "../data/er_magellan/Structured/DBLP-GoogleScholar/test.txt"
+    },
+  {
+    "name": "Structured/DBLP-ACM",
+    "task_type": "classification",
+    "vocab": ["0", "1"],
+    "trainset": "../data/er_magellan/Structured/DBLP-ACM/train.txt",
+    "validset": "../data/er_magellan/Structured/DBLP-ACM/valid.txt",
+    "testset": "../data/er_magellan/Structured/DBLP-ACM/test.txt"
     }
 ]
