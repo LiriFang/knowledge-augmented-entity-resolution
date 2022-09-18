@@ -11,6 +11,13 @@ import random
 import gc
 import time
 
+from tensorflow.keras import backend as K 
+import tensorflow as tf
+gpus = tf.config.experimental.list_physical_devices('GPU')
+for gpu in gpus:
+  tf.config.experimental.set_memory_growth(gpu, True)
+
+
 sys.path.insert(0, "Snippext_public")
 
 from ditto_light.dataset import DittoDataset
@@ -94,22 +101,16 @@ if __name__=="__main__":
         validset = injector.transform_file(validset, overwrite=True)
         testset = injector.transform_file(testset, overwrite=True)
 
-<<<<<<< HEAD
     if hp.dk == 'sherlock':
+        K.clear_session()
+        del injector.model
         del injector
-        gc.collect()
+        K.clear_session()
+        for _ in range(10): gc.collect()
 
-    print("sherlock deleted...")  # check if there are other refernec to the model, not freed...
-    time.sleep(10)
-
-=======
-        if hp.dk == 'sherlock':
-            del injector
-            gc.collect()
-        
-        print("sherlock deleted...") # check if there are other refernec to the model, not freed...
+        print("sherlock deleted...")  # check if there are other refernec to the model, not freed...
         time.sleep(10)
->>>>>>> dc2c99029594c3d4ec5193419d8c9a30ba4baf0e
+
 
     # load train/dev/test sets
     train_dataset = DittoDataset(trainset,

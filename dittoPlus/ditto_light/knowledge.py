@@ -3,6 +3,7 @@ import csv
 import sys
 import os
 import re
+import time
 
 import pandas as pd
 import pyarrow as pa 
@@ -11,6 +12,7 @@ import gc
 import spacy
 
 from collections import Counter
+
 
 from tqdm import tqdm
 from sherlock import helpers
@@ -274,6 +276,14 @@ class SherlockDKInjector(DKInjector):
         # 400 => dimension 
         initialise_nltk()
 
+        # init sherlock
+        self.model = SherlockModel()
+        self.model.initialize_model_from_json(with_weights=True, model_id="sherlock")
+
+        # print("sherlock loaded...")  # check how much memory it takes up... --> 14312 MiB
+        # time.sleep(10)
+
+
     def sep_ds(self, col_names, ds):
         """
         Separate the combined and serialized dataset to the original datasets
@@ -359,8 +369,7 @@ class SherlockDKInjector(DKInjector):
                 # for index, row in df1.iterrows():
                 #     print(row)
 
-                model = SherlockModel()
-                model.initialize_model_from_json(with_weights=True, model_id="sherlock")
+
                 values = pd.Series(df1.to_numpy().T.tolist(), name="values")
                 extract_features(
                     "../temporary_1.csv",
@@ -369,7 +378,8 @@ class SherlockDKInjector(DKInjector):
                 feature_vectors_1 = pd.read_csv("../temporary_1.csv", dtype=np.float32)
                 # print(feature_vectors_1)
                 # raise NotImplementedError
-                predicted_labels_1 = model.predict(feature_vectors_1, "sherlock")
+                predicted_labels_1 = self.model.predict(feature_vectors_1, "sherlock")
+                del feature_vectors_1
                 
                 values = pd.Series(df2.to_numpy().T.tolist(), name="values")
                 extract_features(
@@ -377,7 +387,9 @@ class SherlockDKInjector(DKInjector):
                     values
                 )
                 feature_vectors_2 = pd.read_csv("../temporary_2.csv", dtype=np.float32)
-                predicted_labels_2 = model.predict(feature_vectors_2, "sherlock")
+                predicted_labels_2 = self.model.predict(feature_vectors_2, "sherlock")
+                del feature_vectors_2
+
 
                 cols_1 = list(df1.columns)
                 annotate_df1 = pd.DataFrame(columns=cols_1) # embed first 
@@ -388,8 +400,8 @@ class SherlockDKInjector(DKInjector):
                 df2_serialized = self.prev_transform(df2, cols_2, annotate_df2, predicted_labels_2)
 
                 assert len(df1_serialized) == len(df2_serialized)
-                del model
-                gc.collect()
+
+
                 for i in range(len(df1_serialized)):
                     entry0 = ''
                     entry1 = ''
