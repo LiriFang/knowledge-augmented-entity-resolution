@@ -8,8 +8,6 @@ import sys
 import torch
 import numpy as np
 import random
-import gc
-import time
 
 sys.path.insert(0, "Snippext_public")
 
@@ -94,7 +92,7 @@ if __name__=="__main__":
         validset = injector.transform_file(validset, overwrite=True)
         testset = injector.transform_file(testset, overwrite=True)
 
-<<<<<<< HEAD
+
     if hp.dk == 'sherlock':
         del injector
         gc.collect()
@@ -102,14 +100,6 @@ if __name__=="__main__":
     print("sherlock deleted...")  # check if there are other refernec to the model, not freed...
     time.sleep(10)
 
-=======
-        if hp.dk == 'sherlock':
-            del injector
-            gc.collect()
-        
-        print("sherlock deleted...") # check if there are other refernec to the model, not freed...
-        time.sleep(10)
->>>>>>> dc2c99029594c3d4ec5193419d8c9a30ba4baf0e
 
     # load train/dev/test sets
     train_dataset = DittoDataset(trainset,
