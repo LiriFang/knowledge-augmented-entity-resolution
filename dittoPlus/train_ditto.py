@@ -72,7 +72,7 @@ if __name__=="__main__":
     if hp.dk == 'doduo':
         trainset = trainset+'.doduo'
         testset = testset + '.doduo'
-        validset = validset+ 'doduo'
+        validset = validset+ '.doduo'
 
     # summarize the sequences up to the max sequence length
     if hp.summarize:
