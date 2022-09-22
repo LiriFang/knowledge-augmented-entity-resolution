@@ -71,8 +71,8 @@ if __name__=="__main__":
     testset = config['testset']
     if hp.dk == 'doduo':
         trainset = trainset+'.doduo'
-        textset = trainset + '.doduo'
-        validset = trainset+ 'doduo'
+        testset = testset + '.doduo'
+        validset = validset+ '.doduo'
 
     # summarize the sequences up to the max sequence length
     if hp.summarize:
