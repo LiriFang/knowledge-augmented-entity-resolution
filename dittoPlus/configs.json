@@ -19,9 +19,9 @@
     "name": "Dirty/iTunes-Amazon",
     "task_type": "classification",
     "vocab": ["0", "1"],
-    "trainset": "../data/ditto/er_magellan/Dirty/iTunes-Amazon/train.txt",
-    "validset": "../data/ditto/er_magellan/Dirty/iTunes-Amazon/valid.txt",
-    "testset": "../data/ditto/er_magellan/Dirty/iTunes-Amazon/test.txt"
+    "trainset": "../data/er_magellan/Dirty/iTunes-Amazon/train.txt",
+    "validset": "../data/er_magellan/Dirty/iTunes-Amazon/valid.txt",
+    "testset": "../data/er_magellan/Dirty/iTunes-Amazon/test.txt"
   },
   {
     "name": "computers",
