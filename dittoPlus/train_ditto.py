@@ -85,7 +85,7 @@ if __name__=="__main__":
     # if hp.ct is not None:
     #     pass
 
-    if hp.dk is not None or hp.dk != "doduo":
+    if hp.dk is not None and hp.dk != "doduo":
         if hp.dk == 'product':
             injector = ProductDKInjector(config, hp.dk)
         if hp.dk == 'entityLinking':
@@ -95,6 +95,7 @@ if __name__=="__main__":
         else:
             injector = GeneralDKInjector(config, hp.dk)
 
+        
         trainset = injector.transform_file(trainset, overwrite=True)
         validset = injector.transform_file(validset, overwrite=True)
         testset = injector.transform_file(testset, overwrite=True)
