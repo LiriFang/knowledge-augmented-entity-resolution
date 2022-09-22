@@ -95,9 +95,10 @@ if __name__=="__main__":
         else:
             injector = GeneralDKInjector(config, hp.dk)
 
-        trainset = injector.transform_file(trainset, overwrite=True)
-        validset = injector.transform_file(validset, overwrite=True)
-        testset = injector.transform_file(testset, overwrite=True)
+        if hp.dk != "doduo":
+            trainset = injector.transform_file(trainset, overwrite=True)
+            validset = injector.transform_file(validset, overwrite=True)
+            testset = injector.transform_file(testset, overwrite=True)
 
     # if hp.dk == 'sherlock':
     #     K.clear_session()
