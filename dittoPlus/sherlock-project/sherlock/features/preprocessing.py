@@ -137,7 +137,9 @@ def convert_string_lists_to_lists(
 
 def load_parquet_values(path):
     pf = ParquetFile(source=path)
+    print(pf)
     row_df = pf.read_row_group(0)
+    print(row_df)
 
     return row_df["values"]
 

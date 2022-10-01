@@ -17,13 +17,13 @@ from collections import Counter
 from tqdm import tqdm
 from sherlock import helpers
 from sherlock.deploy.model import SherlockModel
-from sherlock.functional import extract_features_to_csv
+from sherlock.functional import *
 from sherlock.features.paragraph_vectors import initialise_pretrained_model, initialise_nltk
 from sherlock.features.preprocessing import (
     extract_features,
     convert_string_lists_to_lists,
     prepare_feature_extraction,
-    load_parquet_values,
+    # load_parquet_values,
 )
 from sherlock.features.word_embeddings import initialise_word_embeddings
 
@@ -194,7 +194,7 @@ class EntityLinkingDKInjector(DKInjector):
         print("Loading RefinED model...")
         self.refined = Refined.from_pretrained(model_name='wikipedia_model', 
                             entity_set="wikipedia",
-                            data_dir="/home/yirenl2/PLM_DC/data-preparator-for-EM/data/refined/wikipedia", 
+                            data_dir="/projects/bbno/yirenl2/ReFinED/src/data", 
                             download_files=True,
                             use_precomputed_descriptions=True,
                             device="cuda:0",
@@ -270,10 +270,10 @@ class SherlockDKInjector(DKInjector):
 
         """Initialize spacy"""
         # self.nlp = spacy.load('en_core_web_lg')
-        prepare_feature_extraction()
+        helpers.download_data() # Downloading the raw data into ../data/.
+        prepare_feature_extraction() # Preparing feature extraction by downloading 4 files ../sherlock/features/
         initialise_word_embeddings()
-        initialise_pretrained_model(400)
-        # 400 => dimension 
+        initialise_pretrained_model(400) # 400 => dimension 
         initialise_nltk()
 
         # init sherlock
@@ -284,7 +284,7 @@ class SherlockDKInjector(DKInjector):
         # time.sleep(10)
 
 
-    def sep_ds(self, col_names, ds):
+    def sep_ds(self, ds):
         """
         Separate the combined and serialized dataset to the original datasets
         use this as the input for Sherlock
@@ -299,11 +299,11 @@ class SherlockDKInjector(DKInjector):
         return pd.DataFrame(dict_prep)
 
     def create_input_ds(self, ds_f):
-        col_names_1 = []
-        col_names_2 = []
+        # col_names_1 = []
+        # col_names_2 = []
         ds_1 = []
         ds_2 = []
-        ds_3 = []
+        # ds_3 = []
         tails = []
         for line_p in open(ds_f):
             pattern = re.compile(r'(COL|VAL)')
@@ -318,33 +318,96 @@ class SherlockDKInjector(DKInjector):
                 pairs.append((items[i * 4 + 1], items[i * 4 + 3]))
             pair_1 = pairs[:len(pairs) // 2]
             pair_2 = pairs[len(pairs) // 2:]
-            col_names_1 = [v[0].strip() for v in pair_1]
-            col_names_2 = [v[0].strip() for v in pair_2]
+            # col_names_1 = [v[0].strip() for v in pair_1]
+            # col_names_2 = [v[0].strip() for v in pair_2]
             ds_1.append(pair_1)
             ds_2.append(pair_2)
-        df_1 = self.sep_ds(col_names_1, ds_1)
-        df_2 = self.sep_ds(col_names_2, ds_2)
+        # df_1 = self.sep_ds(col_names_1, ds_1)
+        # df_2 = self.sep_ds(col_names_2, ds_2)
+        df_1 = self.sep_ds(ds_1)
+        df_2 = self.sep_ds(ds_2)
         df_3 = pd.DataFrame({'flag': tails})
         return df_1, df_2, df_3
 
-    def prev_transform(self, df, cols, new_df, predict_labels):
+    def prev_transform(self, df, cols, new_df, predict_labels, prompt_type=0):
         """
         Before combining two datasets:
         Manually serialized the rows + inject predict labels 
         Save as a new DataFrame
+        
+        @params: prompt_type: different types of input 
+        {
+            0: COL {col} {predict_labels} VAL {cell_value},
+            1: COL {col} [{predict_labels}] VAL {cell_value},
+            2: COL {col} ({predict_labels}) VAL {cell_value},
+            3: COL {col} /{predict_labels} VAL {cell_value},
+            4: kbert soft position + Sherlock ... #TODO
+        }
         """
         for index, row in df.iterrows():
             for i,col in enumerate(cols):
                 old_value = row[col]
-                # TODO: There is no need to do any "normalization" in this step
+                # TODO: 
+                # normalize dataset -> sherlock -> predict labels 
+                # output normalized values & sherlock labels 
                 # WE have already prepared the dataset 
-                new_value = f"COL {col} {predict_labels[i]} VAL {old_value}"
+                # new_value = f"COL {col} {predict_labels[i]} VAL {old_value}"
+                # new_value = f"COL {col} /{predict_labels[i]} VAL {old_value}"
+                if prompt_type==0:
+                    new_value = f"COL {col} {predict_labels[i]} VAL {old_value}"
+                elif prompt_type==1:
+                    new_value = f"COL {col} [{predict_labels[i]}] VAL {old_value}"
+                elif prompt_type==2:
+                    new_value = f"COL {col} ({predict_labels[i]}) VAL {old_value}"
+                elif prompt_type==3:
+                    new_value = f"COL {col} /{predict_labels[i]} VAL {old_value}"
+                elif prompt_type==4:
+                    pass
+                
                 # print(new_value)
                 new_df.at[index, col] = new_value
                 # .....new_df 
         return new_df
+    
+    def preprocess_sherlock(self, fname, df):
+        """
+        fname: preprocessed file name
+        df_trans: []
 
-    def transform_file(self, input_fn, overwrite=True):
+        return: preprocessed file path
+        """
+        # "../data/data/raw/test_values.parquet"
+        # values = load_parquet_values(df_parquet_fp)
+        X_processed_filename_csv = f'../data/data/processed/{fname}.csv' 
+        # df_process = df.apply(to_string_list).apply(random_sample).apply(normalise_string_whitespace).apply(extract_features).apply(numeric_values_to_str)
+        df_process = df.applymap(to_string_list).applymap(random_sample).applymap(normalise_string_whitespace).applymap(extract_features).applymap(numeric_values_to_str)
+
+        df_process.to_csv(X_processed_filename_csv, index=False)
+        return X_processed_filename_csv
+
+    def train_test_sherlock(self, temp_f, values):
+        """
+        Load train, val, test datasets (should be preprocessed)
+        Initialize model using the "pretrained" model or by training one from scratch.
+        => we use the pretrained model 
+        Evaluate and analyse the model predictions.
+        """
+        # self.model.fit(X_train, y_train, X_validation, y_validation, model_id="sherlock")
+        # print('Trained and saved new model.')
+        # print(f'Finished at {datetime.now()}, took {datetime.now() - start} seconds')
+        # predicted_labels = model.predict(X_test)
+        # predicted_labels = np.array([x.lower() for x in predicted_labels])
+        
+        extract_features(
+            temp_f,
+            values
+        )
+        feature_vectors = pd.read_csv(temp_f, dtype=np.float32)
+        predicted_labels = self.model.predict(feature_vectors, "sherlock")
+        return predicted_labels
+
+
+    def transform_file(self, input_fn, overwrite=True, prompt_type=0):
         """Transform all lines of a tsv file.
 
         Run the knowledge injector. If the output already exists, just return the file name.
@@ -356,48 +419,41 @@ class SherlockDKInjector(DKInjector):
         Returns:
             str: the output file name
         """
-        out_fn = input_fn + '.dk'
+        out_fn = input_fn + f'.prompt_type{prompt_type}.sherlock.dk'
         if not os.path.exists(out_fn) or \
             os.stat(out_fn).st_size == 0 or overwrite:
 
             with open(out_fn, 'w') as fout:
                 df1, df2, df3 = self.create_input_ds(input_fn) # the first dataset, the second dataset, and the flag
-                # Use Sherlock to predict the column types 
-                # then annotate each cell across the columns: 
-                # returns: list of predicted labels: e.g., array(['person', 'city', 'address'], dtype=object)
+                # Use Pretrained Sherlock Model to predict the column types 
+                  # returns: list of predicted labels: e.g., array(['person', 'city', 'address'], dtype=object)
+                # then annotate each cell across the columns 
                 # df1: the first dataset; df2: the second dataset; df3: the pairing result
-                # for index, row in df1.iterrows():
-                #     print(row)
+                # preprocess df1, df2 with sherlock preparators 
 
+                # df1_trans = pd.Series(df1.to_numpy().T.tolist(), name="values")
+                # print(df1_trans)
+                # print(df1_trans.shape)
+                df1_pre_fp = self.preprocess_sherlock("df1_preprocess", df1)
 
-                values = pd.Series(df1.to_numpy().T.tolist(), name="values")
-                extract_features(
-                    "../temporary_1.csv",
-                    values
-                )
-                feature_vectors_1 = pd.read_csv("../temporary_1.csv", dtype=np.float32)
-                # print(feature_vectors_1)
-                # raise NotImplementedError
-                predicted_labels_1 = self.model.predict(feature_vectors_1, "sherlock")
-                del feature_vectors_1
-                
-                values = pd.Series(df2.to_numpy().T.tolist(), name="values")
-                extract_features(
-                    "../temporary_2.csv",
-                    values
-                )
-                feature_vectors_2 = pd.read_csv("../temporary_2.csv", dtype=np.float32)
-                predicted_labels_2 = self.model.predict(feature_vectors_2, "sherlock")
-                del feature_vectors_2
+                # df2_trans = pd.Series(df2.to_numpy().T.tolist(), name="values")
+                df2_prep_fp = self.preprocess_sherlock("df2_preprocess", df2)
 
+                df1_prep = pd.Series(pd.read_csv(df1_pre_fp).
+                                to_numpy().T.tolist(), name="values")
+                df2_prep = pd.Series(pd.read_csv(df2_prep_fp).
+                                to_numpy().T.tolist(), name="values")
 
-                cols_1 = list(df1.columns)
+                predicted_labels_1 = self.train_test_sherlock("../temporary_1.csv", df1_prep)
+                predicted_labels_2 = self.train_test_sherlock("../temporary_2.csv", df2_prep)
+
+                cols_1 = list(df1_prep.columns)
                 annotate_df1 = pd.DataFrame(columns=cols_1) # embed first 
-                df1_serialized = self.prev_transform(df1, cols_1, annotate_df1, predicted_labels_1)
+                df1_serialized = self.prev_transform(df1_prep, cols_1, annotate_df1, predicted_labels_1, prompt_type)
 
-                cols_2 = list(df2.columns)
+                cols_2 = list(df2_prep.columns)
                 annotate_df2 = pd.DataFrame(columns=cols_2) # embed first 
-                df2_serialized = self.prev_transform(df2, cols_2, annotate_df2, predicted_labels_2)
+                df2_serialized = self.prev_transform(df2_prep, cols_2, annotate_df2, predicted_labels_2, prompt_type)
 
                 assert len(df1_serialized) == len(df2_serialized)
 
