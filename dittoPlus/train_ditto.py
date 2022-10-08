@@ -176,7 +176,6 @@ if __name__=="__main__":
                                    da=hp.da,
                                    kbert=hp.kbert)
 
-
     # train and evaluate the model
     model = train(train_dataset,
           valid_dataset,
