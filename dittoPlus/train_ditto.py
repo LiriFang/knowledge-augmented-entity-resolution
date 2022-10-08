@@ -8,6 +8,9 @@ import sys
 import torch
 import numpy as np
 import random
+import jsonlines
+
+from scipy.special import softmax
 
 from tensorflow.keras import backend as K
 import tensorflow as tf
@@ -22,6 +25,54 @@ from ditto_light.dataset import DittoDataset
 from ditto_light.summarize import Summarizer
 from ditto_light.knowledge import *
 from ditto_light.ditto import train
+
+
+def classify(sentence_pairs, model,
+             lm='distilbert',
+             max_len=256,
+             threshold=None):
+    """Apply the MRPC model.
+
+    Args:
+        sentence_pairs (list of str): the sequence pairs
+        model (MultiTaskNet): the model in pytorch
+        max_len (int, optional): the max sequence length
+        threshold (float, optional): the threshold of the 0's class
+
+    Returns:
+        list of float: the scores of the pairs
+    """
+    inputs = sentence_pairs
+    # print('max_len =', max_len)
+    dataset = DittoDataset(inputs,
+                           max_len=max_len,
+                           lm=lm)
+    # print(dataset[0])
+    iterator = data.DataLoader(dataset=dataset,
+                               batch_size=len(dataset),
+                               shuffle=False,
+                               num_workers=0,
+                               collate_fn=DittoDataset.pad)
+
+    # prediction
+    all_probs = []
+    all_logits = []
+    with torch.no_grad():
+        # print('Classification')
+        for i, batch in enumerate(iterator):
+            x, _ = batch
+            logits = model(x)
+            probs = logits.softmax(dim=1)[:, 1]
+            all_probs += probs.cpu().numpy().tolist()
+            all_logits += logits.cpu().numpy().tolist()
+
+    if threshold is None:
+        threshold = 0.5
+
+    pred = [1 if p > threshold else 0 for p in all_probs]
+    return pred, all_logits
+
+
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser()
@@ -126,9 +177,47 @@ if __name__=="__main__":
                                    kbert=hp.kbert)
 
 
-
     # train and evaluate the model
-    train(train_dataset,
+    model = train(train_dataset,
           valid_dataset,
           test_dataset,
           run_tag, hp)
+
+
+    # predict the model
+    # batch processing
+    def process_batch(rows, pairs, writer):
+        predictions, logits = classify(pairs, model, lm=hp.lm,
+                                        max_len=hp.max_len,
+                                        threshold=0.5)
+        # try:
+        #     predictions, logits = classify(pairs, model, lm=lm,
+        #                                    max_len=max_len,
+        #                                    threshold=threshold)
+        # except:
+        #     # ignore the whole batch
+        #     return
+        scores = softmax(logits, axis=1)
+        for row, pred, score in zip(rows, predictions, scores):
+            output = {'left': row[0], 'right': row[1],
+                'match': pred,
+                'match_confidence': score[int(pred)]}
+            writer.write(output)
+    
+    start_time = time.time()
+    with jsonlines.open(f"./output/{hp.task}", mode='w') as writer:
+        pairs = test_dataset.pairs
+        rows = test_dataset.pairs
+        # pairs.append(to_str(row[0], row[1], summarizer, max_len, dk_injector))
+        # rows.append(row)
+        if len(pairs) == hp.batch_size:
+            process_batch(rows, pairs, writer)
+            pairs.clear()
+            rows.clear()
+
+        if len(pairs) > 0:
+            process_batch(rows, pairs, writer)
+
+    run_time = time.time() - start_time
+    run_tag = '%s_lm=%s_dk=%s_su=%s' % (config['name'], hp.lm, str(hp.dk != None), str(hp.summarizer != None))
+    os.system('echo %s %f >> log.txt' % (run_tag, run_time))
