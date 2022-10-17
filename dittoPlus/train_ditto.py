@@ -27,8 +27,8 @@ if __name__=="__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--task", type=str, default="Dirty/DBLP-GoogleScholar")
     parser.add_argument("--run_id", type=int, default=0)
-    parser.add_argument("--batch_size", type=int, default=64)
-    parser.add_argument("--max_len", type=int, default=256)
+    parser.add_argument("--batch_size", type=int, default=8)
+    parser.add_argument("--max_len", type=int, default=512)
     parser.add_argument("--lr", type=float, default=3e-5)
     parser.add_argument("--n_epochs", type=int, default=20)
     parser.add_argument("--finetuning", dest="finetuning", action="store_true")
@@ -88,17 +88,17 @@ if __name__=="__main__":
     if hp.dk is not None and hp.dk != "doduo":
         if hp.dk == 'product':
             injector = ProductDKInjector(config, hp.dk)
-        if hp.dk == 'entityLinking':
+        elif hp.dk == 'entityLinking':
             injector = EntityLinkingDKInjector(config, hp.dk)
-        if hp.dk == 'sherlock':
+        elif hp.dk == 'sherlock':
             injector = SherlockDKInjector(config, hp.dk)
         else:
             injector = GeneralDKInjector(config, hp.dk)
 
-        
-        trainset = injector.transform_file(trainset, overwrite=True)
-        validset = injector.transform_file(validset, overwrite=True)
-        testset = injector.transform_file(testset, overwrite=True)
+        overwrite = True
+        trainset = injector.transform_file(trainset, overwrite)
+        validset = injector.transform_file(validset, overwrite)
+        testset = injector.transform_file(testset, overwrite)
 
     # if hp.dk == 'sherlock':
     #     K.clear_session()

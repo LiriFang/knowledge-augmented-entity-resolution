@@ -194,7 +194,7 @@ class EntityLinkingDKInjector(DKInjector):
         print("Loading RefinED model...")
         self.refined = Refined.from_pretrained(model_name='wikipedia_model', 
                             entity_set="wikipedia",
-                            data_dir="/home/yirenl2/PLM_DC/data-preparator-for-EM/data/refined/wikipedia", 
+                            data_dir="/projects/bbno/yirenl2/ReFinED/src/data", 
                             download_files=True,
                             use_precomputed_descriptions=True,
                             device="cuda:0",
