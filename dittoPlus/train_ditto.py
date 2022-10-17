@@ -39,9 +39,11 @@ if __name__=="__main__":
     parser.add_argument("--da", type=str, default=None)
     parser.add_argument("--alpha_aug", type=float, default=0.8)
     parser.add_argument("--dk", type=str, default=None)
+    parser.add_argument("--prompt", type=int, default=0)
     parser.add_argument("--summarize", dest="summarize", action="store_true")
     parser.add_argument("--size", type=int, default=None)
     parser.add_argument("--device", type=str, default='cuda', help='cpu or cuda')
+    parser.add_argument("--kbert",type=boolean, default=False)
 
     hp = parser.parse_args()
 
@@ -88,27 +90,20 @@ if __name__=="__main__":
     if hp.dk is not None and hp.dk != "doduo":
         if hp.dk == 'product':
             injector = ProductDKInjector(config, hp.dk)
-        if hp.dk == 'entityLinking':
+        elif hp.dk == 'entityLinking':
             injector = EntityLinkingDKInjector(config, hp.dk)
-        if hp.dk == 'sherlock':
+        elif hp.dk == 'sherlock':
             injector = SherlockDKInjector(config, hp.dk)
+            #todo connect sherlock with k-bert
         else:
             injector = GeneralDKInjector(config, hp.dk)
 
-        
-        trainset = injector.transform_file(trainset, overwrite=True)
-        validset = injector.transform_file(validset, overwrite=True)
-        testset = injector.transform_file(testset, overwrite=True)
+        trainset= injector.transform_file(trainset, overwrite=True, fname=f"train_{config['name']}",prompt_type=hp.prompt)
+        validset= injector.transform_file(validset, overwrite=True,fname=f"valid_{config['name']}",prompt_type=hp.prompt)
+        testset= injector.transform_file(testset, overwrite=True,fname=f"test_{config['name']}",prompt_type=hp.prompt)
+    
+    # add visible matrix by K-bert
 
-    # if hp.dk == 'sherlock':
-    #     K.clear_session()
-    #     del injector.model
-    #     del injector
-    #     K.clear_session()
-    #     for _ in range(10): gc.collect()
-
-    #     print("sherlock deleted...")  # check if there are other refernec to the model, not freed...
-    #     time.sleep(10)
 
 
     # load train/dev/test sets

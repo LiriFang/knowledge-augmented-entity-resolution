@@ -26,7 +26,8 @@ from sherlock.features.preprocessing import (
     # load_parquet_values,
 )
 from sherlock.features.word_embeddings import initialise_word_embeddings
-
+from preparator_text import *
+from preparators_general import *
 
 class DKInjector:
     """Inject domain knowledge to the data entry pairs.
@@ -70,63 +71,6 @@ class DKInjector:
                         entry1 = self.transform(LL[1])
                         fout.write(entry0 + '\t' + entry1 + '\t' + LL[2])
         return out_fn
-
-
-class ProductDKInjector(DKInjector):
-    """The domain-knowledge injector for product data.
-    """
-    def initialize(self):
-        """Initialize spacy"""
-        self.nlp = spacy.load('en_core_web_lg')
-
-    def transform(self, entry):
-        """Transform a data entry.
-
-        Use NER to regconize the product-related named entities and
-        mark them in the sequence. Normalize the numbers into the same format.
-
-        Args:
-            entry (str): the serialized data entry
-
-        Returns:
-            str: the transformed entry
-        """
-        res = ''
-        doc = self.nlp(entry, disable=['tagger', 'parser'])
-        ents = doc.ents
-        start_indices = {}
-        end_indices = {}
-
-        for ent in ents:
-            start, end, label = ent.start, ent.end, ent.label_
-            if label in ['NORP', 'GPE', 'LOC', 'PERSON', 'PRODUCT']:
-                start_indices[start] = 'PRODUCT'
-                end_indices[end] = 'PRODUCT'
-            if label in ['DATE', 'QUANTITY', 'TIME', 'PERCENT', 'MONEY']:
-                start_indices[start] = 'NUM'
-                end_indices[end] = 'NUM'
-
-        for idx, token in enumerate(doc):
-            if idx in start_indices:
-                res += start_indices[idx] + ' '
-
-            # normalizing the numbers
-            if token.like_num:
-                try:
-                    val = float(token.text)
-                    if val == round(val):
-                        res += '%d ' % (int(val))
-                    else:
-                        res += '%.2f ' % (val)
-                except:
-                    res += token.text + ' '
-            elif len(token.text) >= 7 and \
-                 any([ch.isdigit() for ch in token.text]):
-                res += 'ID ' + token.text + ' '
-            else:
-                res += token.text + ' '
-        return res.strip()
-
 
 
 class GeneralDKInjector(DKInjector):
@@ -333,15 +277,15 @@ class SherlockDKInjector(DKInjector):
         """
         Before combining two datasets:
         Manually serialized the rows + inject predict labels 
-        Save as a new DataFrame
+        Save as a new DataFrame: new_df
         
         @params: prompt_type: different types of input 
         {
-            0: COL {col} {predict_labels} VAL {cell_value},
+            0: COL <text>{col}</text> <tag>{predict_labels[i]}</tag> VAL {old_value} input for kbert soft position
             1: COL {col} [{predict_labels}] VAL {cell_value},
             2: COL {col} ({predict_labels}) VAL {cell_value},
             3: COL {col} /{predict_labels} VAL {cell_value},
-            4: kbert soft position + Sherlock ... #TODO
+            4: COL {col} {predict_labels} VAL {cell_value}
         }
         """
         for index, row in df.iterrows():
@@ -350,11 +294,8 @@ class SherlockDKInjector(DKInjector):
                 # TODO: 
                 # normalize dataset -> sherlock -> predict labels 
                 # output normalized values & sherlock labels 
-                # WE have already prepared the dataset 
-                # new_value = f"COL {col} {predict_labels[i]} VAL {old_value}"
-                # new_value = f"COL {col} /{predict_labels[i]} VAL {old_value}"
                 if prompt_type==0:
-                    new_value = f"COL {col} {predict_labels[i]} VAL {old_value}"
+                    new_value = f"COL <head>{col}</head> <tail>{predict_labels[i]}</tail> VAL {old_value}"
                 elif prompt_type==1:
                     new_value = f"COL {col} [{predict_labels[i]}] VAL {old_value}"
                 elif prompt_type==2:
@@ -362,14 +303,14 @@ class SherlockDKInjector(DKInjector):
                 elif prompt_type==3:
                     new_value = f"COL {col} /{predict_labels[i]} VAL {old_value}"
                 elif prompt_type==4:
-                    pass
+                    new_value = f"COL {col} {predict_labels[i]} VAL {old_value}"
                 
                 # print(new_value)
                 new_df.at[index, col] = new_value
                 # .....new_df 
         return new_df
     
-    def preprocess_sherlock(self, fname, df):
+    def preprocess_sherlock_adhoc(self, fname, df):
         """
         fname: preprocessed file name
         df_trans: []
@@ -380,10 +321,48 @@ class SherlockDKInjector(DKInjector):
         # values = load_parquet_values(df_parquet_fp)
         X_processed_filename_csv = f'../data/data/processed/{fname}.csv' 
         # df_process = df.apply(to_string_list).apply(random_sample).apply(normalise_string_whitespace).apply(extract_features).apply(numeric_values_to_str)
-        df_process = df.applymap(to_string_list).applymap(random_sample).applymap(normalise_string_whitespace).applymap(extract_features).applymap(numeric_values_to_str)
-
+        """
+        For publication data: 
+        data quality issues: 
+             - title: encoding 
+             - authors: 
+                 composite values
+                 encoding 
+                 special character
+             - venue 
+                special character 
+                acronym 
+                tokenization is required 
+             - year : data type [should be int]
+        transformation choices: 
+        - transliterate: encoding issues prep across the schema 
+        - special characters prep across the schema 
+        - split values in column authors
+            - for each sub-value: prepare the value
+            - combine with ","
+        - acronym on column venue 
+        - bert tokenizer on column venue 
+        - convert data into int on column year 
+        """
+        # TODO: bert tokenizer as a new preparator
+        df = df.applymap(PreparatorTransliterate)
+        print(type(df))
+        print(df['title'])
+        print(type(df['title']))
+        df['title'] = df['title'].apply(PreparatorRemoveSpecialCharacters)
+        df['venue'] = df['venue'].apply(PreparatorAcronymize)
+        df['year'] = df['year'].replace('', 0).astype(float).astype(int) # fill nan with 0
+        df['authors'] = df['authors'].apply(lambda x: x.split(','))
+        df['authors'] = df['authors'].apply(PreparatorTransliterate)
+        df['authors'] = df['authors'].apply(eval)
+        df['authors'] = df['authors'].apply(lambda x: Preparator_MergeAttributes(x, sep=','))
+        # df['authors'] = df['authors'].apply(lambda x: x.split(','))
+        # df['authors'] = df['authors'].apply(PreparatorTransliterate)
+        # df['authors'] = df['authors'].apply(PreparatorMergeAttributes)
+        print(df['authors'])
+        df_process = df
         df_process.to_csv(X_processed_filename_csv, index=False)
-        return X_processed_filename_csv
+        return df_process
 
     def train_test_sherlock(self, temp_f, values):
         """
@@ -405,9 +384,13 @@ class SherlockDKInjector(DKInjector):
         feature_vectors = pd.read_csv(temp_f, dtype=np.float32)
         predicted_labels = self.model.predict(feature_vectors, "sherlock")
         return predicted_labels
+    
+    def connect_wt_kbert(self,row:list):
+        for cell_value in row:
+            pass
+        pass
 
-
-    def transform_file(self, input_fn, overwrite=True, prompt_type=0):
+    def transform_file(self, input_fn, overwrite=True, fname="Textual/Abt-Buy", prompt_type=0,preprocess=False):
         """Transform all lines of a tsv file.
 
         Run the knowledge injector. If the output already exists, just return the file name.
@@ -420,32 +403,35 @@ class SherlockDKInjector(DKInjector):
             str: the output file name
         """
         out_fn = input_fn + f'.prompt_type{prompt_type}.sherlock.dk'
+        fname_pre = fname.replace('/','_')
+        out_row_list = [] # this is the input for k-bert
         if not os.path.exists(out_fn) or \
             os.stat(out_fn).st_size == 0 or overwrite:
 
             with open(out_fn, 'w') as fout:
                 df1, df2, df3 = self.create_input_ds(input_fn) # the first dataset, the second dataset, and the flag
-                # Use Pretrained Sherlock Model to predict the column types 
-                  # returns: list of predicted labels: e.g., array(['person', 'city', 'address'], dtype=object)
-                # then annotate each cell across the columns 
                 # df1: the first dataset; df2: the second dataset; df3: the pairing result
+                df1_raw_filename_csv = f'../data/data/raw/df1_{fname_pre}.csv' 
+                df2_raw_filename_csv = f'../data/data/raw/df2_{fname_pre}.csv' 
+                df1.to_csv(df1_raw_filename_csv, index=False)
+                df2.to_csv(df2_raw_filename_csv, index=False)
+
                 # preprocess df1, df2 with sherlock preparators 
+                if preprocess:
+                    df1_prep = self.preprocess_sherlock_adhoc(f"df1_{fname_pre}", df1)
+                    df2_prep = self.preprocess_sherlock_adhoc(f"df2_{fname_pre}", df2)
+                else:
+                    df1_prep = df1
+                    df2_prep = df2
 
-                # df1_trans = pd.Series(df1.to_numpy().T.tolist(), name="values")
-                # print(df1_trans)
-                # print(df1_trans.shape)
-                df1_pre_fp = self.preprocess_sherlock("df1_preprocess", df1)
-
-                # df2_trans = pd.Series(df2.to_numpy().T.tolist(), name="values")
-                df2_prep_fp = self.preprocess_sherlock("df2_preprocess", df2)
-
-                df1_prep = pd.Series(pd.read_csv(df1_pre_fp).
-                                to_numpy().T.tolist(), name="values")
-                df2_prep = pd.Series(pd.read_csv(df2_prep_fp).
-                                to_numpy().T.tolist(), name="values")
-
-                predicted_labels_1 = self.train_test_sherlock("../temporary_1.csv", df1_prep)
-                predicted_labels_2 = self.train_test_sherlock("../temporary_2.csv", df2_prep)
+                df1_trans = pd.Series(df1_prep.to_numpy().T.tolist(), name="values").astype(str)
+                df2_trans = pd.Series(df2_prep.to_numpy().T.tolist(), name="values").astype(str)
+                
+                # Use Pretrained Sherlock Model to predict the column types 
+                # returns: list of predicted labels: e.g., array(['person', 'city', 'address'], dtype=object)
+                # then annotate each cell across the columns 
+                predicted_labels_1 = self.train_test_sherlock("../temporary_1.csv", df1_trans)
+                predicted_labels_2 = self.train_test_sherlock("../temporary_2.csv", df2_trans)
 
                 cols_1 = list(df1_prep.columns)
                 annotate_df1 = pd.DataFrame(columns=cols_1) # embed first 
@@ -466,6 +452,7 @@ class SherlockDKInjector(DKInjector):
                     sec_row = df2_serialized.iloc[i]
                     entry1 += ' '.join(sec_row)
                     entry2 = int(df3.loc[i, 'flag'])
+                    # out_row_list.append(list(fir_row)+list(sec_row)+[entry2])
                     fout.write(entry0 + '\t' + entry1 + '\t' + str(entry2) + '\n')
                     # print(f"{entry0} + '\t' + {entry1} + '\t' + {entry2}")
         return out_fn

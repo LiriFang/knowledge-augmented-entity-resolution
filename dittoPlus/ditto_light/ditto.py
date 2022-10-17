@@ -11,7 +11,7 @@ import argparse
 
 from .dataset import DittoDataset
 from torch.utils import data
-from transformers import AutoModel, AdamW, get_linear_schedule_with_warmup
+from transformers import AutoModel, AdamW, RobertaModel, get_linear_schedule_with_warmup
 from tensorboardX import SummaryWriter
 # from apex import amp
 
@@ -24,6 +24,7 @@ class DittoModel(nn.Module):
     def __init__(self, device='cuda', lm='roberta', alpha_aug=0.8):
         super().__init__()
         if lm in lm_mp:
+            # self.bert = RobertaModel.from_pretrained(lm_mp[lm])
             self.bert = AutoModel.from_pretrained(lm_mp[lm])
         else:
             self.bert = AutoModel.from_pretrained(lm)
@@ -124,8 +125,12 @@ def train_step(train_iter, model, optimizer, scheduler, hp):
         optimizer.zero_grad()
 
         if len(batch) == 2:
-            x, y = batch
-            prediction = model(x)
+            x,y = batch
+            prediction = model(x)         
+        elif len(batch) == 6:
+            # x, self.labels[idx],know_sent_batch,position_batch,visible_matrix_batch,seg_batch
+            x, y, know_sent_batch,position_batch,visible_matrix_batch,seg_batch = batch
+            prediction = model(x) #TODO pass know_sent_batch,position_batch,visible_matrix_batch,seg_batch with x to the model 
         else:
             x1, x2, y = batch
             prediction = model(x1, x2)

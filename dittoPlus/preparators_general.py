@@ -1,7 +1,15 @@
 import re
+from preparator_text import PreparatorTransliterate
+
+from sklearn.utils import column_or_1d
 
 # TODO: remove special characters
 from pyphonetics import Metaphone
+import pandas as pd
+import tokenize
+# import nltk
+import numpy as np
+
 
 
 def PreparatorRemoveSpecialCharacters(unicode_line):
@@ -40,6 +48,10 @@ def PreparatorMergeAttributes(unicode_line: dict):
     return ' '.join(unicode_line[k] for k in sorted(unicode_line))
 
 
+def Preparator_MergeAttributes(unicode_line, sep=","):
+    return f"{sep}".join(unicode_line)
+
+
 def PreparatorPhoneticEncode(unicode_line):
     ''' phonetic encode'''
     metaphone = Metaphone()
@@ -49,7 +61,7 @@ def PreparatorPhoneticEncode(unicode_line):
 
 def PreparatorCapitalize(unicode_line):
     return unicode_line.upper()
-
+ 
 
 def main():
     # value = '<>hello world \\<[]'
@@ -64,8 +76,30 @@ def main():
     # print(res)
     uni_code = 'Berlin'
     # res = PreparatorPhoneticEncode(uni_code)
-    res = PreparatorCapitalize(uni_code)
-    print(res)
+    # res = PreparatorCapitalize(uni_code)
+    # print(res)
+    d = {
+        "description":['thiscityis Beijing Ludäscher', 'Isawhimon the street','she was a girl',''], 
+        "year":[1987,1099.0,'',1400.0],
+        "authors":['Lan Li, Ludäscher Li', 'May, Jane','', 'M Jiang, Li Liang']
+    }
+    df = pd.DataFrame(d)
+    print(type(df))
+    df = df.applymap(PreparatorTransliterate)
+    print(type(df))
+    df['description'] = df['description'].apply(PreparatorRemoveSpecialCharacters)
+    print(df['description'])
+    df['year'] = df['year'].replace('', 0).astype(float).astype(int) # fillna 
+    print(df['year'])
+
+    df['authors'] = df['authors'].apply(lambda x: x.split(','))
+    df['authors'] = df['authors'].apply(PreparatorTransliterate)
+    df['authors'] = df['authors'].apply(eval)
+    print(df['authors'])
+    print(type(df['authors'][0]))
+    
+    df['authors'] = df['authors'].apply(lambda x: Preparator_MergeAttributes(x, sep=','))
+    print(df['authors'])
 
 
 if __name__ == '__main__':
