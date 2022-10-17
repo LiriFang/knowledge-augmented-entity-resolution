@@ -27,8 +27,8 @@ if __name__=="__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--task", type=str, default="Dirty/DBLP-GoogleScholar")
     parser.add_argument("--run_id", type=int, default=0)
-    parser.add_argument("--batch_size", type=int, default=64)
-    parser.add_argument("--max_len", type=int, default=256)
+    parser.add_argument("--batch_size", type=int, default=8)
+    parser.add_argument("--max_len", type=int, default=512)
     parser.add_argument("--lr", type=float, default=3e-5)
     parser.add_argument("--n_epochs", type=int, default=20)
     parser.add_argument("--finetuning", dest="finetuning", action="store_true")
@@ -98,9 +98,9 @@ if __name__=="__main__":
         else:
             injector = GeneralDKInjector(config, hp.dk)
 
-        trainset= injector.transform_file(trainset, overwrite=True, fname=f"train_{config['name']}",prompt_type=hp.prompt)
-        validset= injector.transform_file(validset, overwrite=True,fname=f"valid_{config['name']}",prompt_type=hp.prompt)
-        testset= injector.transform_file(testset, overwrite=True,fname=f"test_{config['name']}",prompt_type=hp.prompt)
+    trainset= injector.transform_file(trainset, overwrite=True, fname=f"train_{config['name']}",prompt_type=hp.prompt)
+    validset= injector.transform_file(validset, overwrite=True,fname=f"valid_{config['name']}",prompt_type=hp.prompt)
+    testset= injector.transform_file(testset, overwrite=True,fname=f"test_{config['name']}",prompt_type=hp.prompt)
     
     # add visible matrix by K-bert
 

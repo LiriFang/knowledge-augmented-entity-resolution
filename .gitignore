@@ -186,3 +186,6 @@ glove.6B.50d.txt
 *.h5
 *.tsv
 model_files/classes_sherlock.npy
+
+*.slurm
+
