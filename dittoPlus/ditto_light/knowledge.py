@@ -243,7 +243,16 @@ class EntityLinkingDKInjector(DKInjector):
                     if len(span.pred_types) > 0:
                         spanType = span.pred_types[0][1]
                         # text = text[:span.start] + '<' + spanType + '>' + entry[span.start:span.start + span.ln] + '</' + spanType + '>' + entry[span.start + span.ln:]
-                        text = text[:span.start] + entry[span.start:span.start + span.ln] + ' (' + spanType + ')' + entry[span.start + span.ln:]
+                        # text = text[:span.start] \
+                        #         + text[span.start:span.start + span.ln] \
+                        #             + ' (' + spanType + ')' \
+                        #                 + text[span.start + span.ln:]
+                        
+                        # new annotation for K-BERT
+                        text = text[:span.start] \
+                                + "<head>" + text[span.start:span.start + span.ln] + "</head>" \
+                                    + "<tail>" + spanType + "</tail>" \
+                                        + text[span.start + span.ln:]
                     else:
                         text = entry
                 valuesTagged.append(text)
