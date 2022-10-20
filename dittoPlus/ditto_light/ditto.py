@@ -15,6 +15,8 @@ from transformers import AutoModel, AdamW, RobertaModel, get_linear_schedule_wit
 from tensorboardX import SummaryWriter
 # from apex import amp
 
+from .models import RobertaWithVM
+
 lm_mp = {'roberta': 'roberta-base',
          'distilbert': 'distilbert-base-uncased'}
 
@@ -25,7 +27,8 @@ class DittoModel(nn.Module):
         super().__init__()
         if lm in lm_mp:
             # self.bert = RobertaModel.from_pretrained(lm_mp[lm])
-            self.bert = AutoModel.from_pretrained(lm_mp[lm])
+            # self.bert = AutoModel.from_pretrained(lm_mp[lm])
+            self.bert = RobertaWithVM.from_pretrained(lm_mp[lm])
         else:
             self.bert = AutoModel.from_pretrained(lm)
 
@@ -37,7 +40,7 @@ class DittoModel(nn.Module):
         self.fc = torch.nn.Linear(hidden_size, 2)
 
 
-    def forward(self, x1, x2=None):
+    def forward(self, x1, x2=None, vm=None):
         """Encode the left, right, and the concatenation of left+right.
 
         Args:
@@ -51,7 +54,8 @@ class DittoModel(nn.Module):
         if x2 is not None:
             # MixDA
             x2 = x2.to(self.device) # (batch_size, seq_len)
-            enc = self.bert(torch.cat((x1, x2)))[0][:, 0, :]
+
+            enc = self.bert(torch.cat((x1, x2)), attention_mask=vm)[0][:, 0, :]
             batch_size = len(x1)
             enc1 = enc[:batch_size] # (batch_size, emb_size)
             enc2 = enc[batch_size:] # (batch_size, emb_size)
@@ -59,7 +63,9 @@ class DittoModel(nn.Module):
             aug_lam = np.random.beta(self.alpha_aug, self.alpha_aug)
             enc = enc1 * aug_lam + enc2 * (1.0 - aug_lam)
         else:
-            enc = self.bert(x1)[0][:, 0, :]
+            print(vm)
+            raise NotImplementedError
+            enc = self.bert(x1, attention_mask=vm)[0][:, 0, :]
 
         return self.fc(enc) # .squeeze() # .sigmoid()
 
@@ -122,6 +128,7 @@ def train_step(train_iter, model, optimizer, scheduler, hp):
     criterion = nn.CrossEntropyLoss()
     # criterion = nn.MSELoss()
     for i, batch in enumerate(train_iter):
+        # print(len(batch))
         optimizer.zero_grad()
 
         if len(batch) == 2:
@@ -130,7 +137,9 @@ def train_step(train_iter, model, optimizer, scheduler, hp):
         elif len(batch) == 6:
             # x, self.labels[idx],know_sent_batch,position_batch,visible_matrix_batch,seg_batch
             x, y, know_sent_batch,position_batch,visible_matrix_batch,seg_batch = batch
-            prediction = model(x) #TODO pass know_sent_batch,position_batch,visible_matrix_batch,seg_batch with x to the model 
+            # print(batch)
+            # raise NotImplementedError
+            prediction = model(x, vm=visible_matrix_batch) #TODO pass know_sent_batch,position_batch,visible_matrix_batch,seg_batch with x to the model 
         else:
             x1, x2, y = batch
             prediction = model(x1, x2)

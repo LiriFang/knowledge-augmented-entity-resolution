@@ -214,6 +214,7 @@ class SherlockDKInjector(DKInjector):
 
         """Initialize spacy"""
         # self.nlp = spacy.load('en_core_web_lg')
+        
         helpers.download_data() # Downloading the raw data into ../data/.
         prepare_feature_extraction() # Preparing feature extraction by downloading 4 files ../sherlock/features/
         initialise_word_embeddings()
