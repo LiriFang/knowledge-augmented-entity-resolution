@@ -26,8 +26,9 @@ from sherlock.features.preprocessing import (
     # load_parquet_values,
 )
 from sherlock.features.word_embeddings import initialise_word_embeddings
-from preparator_text import *
-from preparators_general import *
+# from preparator_text import *
+# from preparators_general import *
+
 
 class DKInjector:
     """Inject domain knowledge to the data entry pairs.

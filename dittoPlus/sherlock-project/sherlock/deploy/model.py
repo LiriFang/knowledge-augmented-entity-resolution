@@ -24,7 +24,7 @@ class SherlockModel:
         self.do = 0.35
         self.lr = 0.0001
 
-        self.model_files_directory = "sherlock-project/model_files/"
+        self.model_files_directory = "../model_files/"
 
     def fit(
         self, X_train: pd.DataFrame, y_train, X_val: pd.DataFrame, y_val, model_id: str

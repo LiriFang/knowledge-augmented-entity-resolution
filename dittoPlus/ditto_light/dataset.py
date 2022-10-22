@@ -1,3 +1,4 @@
+from unittest.mock import sentinel
 import torch
 
 from torch.utils import data
@@ -144,29 +145,42 @@ class DittoDataset(data.Dataset):
         pos_idx = -1
         abs_idx = -1
         abs_idx_src = []
-        skip_idx = []
-        
+        # skip_idx = []
+        head_left_id, head_right_id = -1, -1
+        tail_left_id, tail_right_id = -1, -1
+        # print('sent_batch', sent_batch) 
         for i,token in enumerate(sent_batch): 
-            skip = False
+            # token_skip_idx = []
+            # skip = False
             if token=='<head>':
-                skip_idx.append(i)
-                skip = True
-                tail_left_id = sent_batch[i:].index("<tail>")+1
-                tail_right_id = sent_batch[i:].index("</tail>")
-                tail_value = sent_batch[i+tail_left_id:tail_right_id+i]
-                tail_skip_idx += list(range(i+tail_left_id-1,tail_right_id+i+1))
+                # skip_idx.append(i)
+                # token_skip_idx.append(i)
+                # skip = True
+                head_left_id = i
+                head_right_id = sent_batch[i:].index('</head>') + i
+                tail_left_id = sent_batch[i:].index("<tail>")+1 +i
+                tail_right_id = sent_batch[i:].index("</tail>") + i
+                
+                # tail_skip_idx += list(range(i+tail_left_id-1,tail_right_id+i+1))
+                # token_skip_idx += [i+tail_left_id-1,tail_right_id+i]
                 # skip = True
                 # entities= [" ".join(tail_value)] # entities: ["author name"]
-                entities = tail_value
+                entities = [] 
                 # print(entities)
                 # raise NotImplementedError
-            elif token == '</head>':
-                skip_idx.append(i)
-                skip = True
-            else:
-                entities=[]
+            # elif token == '</head>':
+                # skip_idx.append(i)
+                # token_skip_idx.append(i)
+                # skip = True
+            elif head_left_id < i < head_right_id:
+                tail_value = sent_batch[tail_left_id:tail_right_id]
+                entities = tail_value
+            elif tail_left_id <= i <= tail_right_id:
+                continue
+            else: entities = []
 
-            if not skip:
+            # if not skip:
+            if  token not in ['<head>','</head>','<tail>','</tail>']: # and not (tail_left_id <= i <= tail_right_id):
                 sent_tree.append((token, entities))
                 token_pos_idx = [pos_idx+1] #[pos_idx+i for i in range(1, len(token)+1)]
                 token_abs_idx = [abs_idx+1] #[abs_idx+i for i in range(1, len(token)+1)]
@@ -175,49 +189,50 @@ class DittoDataset(data.Dataset):
             entities_pos_idx = []
             entities_abs_idx = []
             # for ent in entities:
-            if len(entities) >0:
-                if ent_abs_idx 
-                ent_pos_idx = [token_pos_idx[-1] + p for p in range(1, len(entities)+1)]#ent
-                entities_pos_idx.append(ent_pos_idx)
-                ent_abs_idx = [abs_idx + a for a in range(1, len(entities)+1)]#ent
-                abs_idx = ent_abs_idx[-1]
-                entities_abs_idx.append(ent_abs_idx)
-           
-            pos_idx_tree.append((token_pos_idx, entities_pos_idx))
-            abs_idx_tree.append((token_abs_idx, entities_abs_idx))
-            pos_idx = token_pos_idx[-1]
-            abs_idx_src += token_abs_idx
+            # if len(entities) >0:
+            for ent in entities:
+                if ent not in ['<tail>','</tail>']:
+                    ent_pos_idx = [token_pos_idx[-1]+1]#[token_pos_idx[-1] + p for p in range(1, len(entities)+1)]#ent
+                    entities_pos_idx.append(ent_pos_idx)
+                    ent_abs_idx = [abs_idx + 1]#[abs_idx + a for a in range(1, len(entities)+1)]#ent
+                    abs_idx = ent_abs_idx[-1]
+                    entities_abs_idx.append(ent_abs_idx)
+            if  token not in ['<head>','</head>','<tail>','</tail>']:
+                pos_idx_tree.append((token_pos_idx, entities_pos_idx))
+                abs_idx_tree.append((token_abs_idx, entities_abs_idx))
+                pos_idx = token_pos_idx[-1]
+                abs_idx_src += token_abs_idx
 
         # Get know_sent and pos
         know_sent = []
         pos = []
         seg = []
-        
+        # print('sent_tree',sent_tree)
         for i in range(len(sent_tree)):
             word = sent_tree[i][0]
             # if word in self.special_tags:
             #     know_sent += [word]
             #     seg += [0]
             # else:
-            print(word, i)
-            if i not in skip_idx:
-                add_word = [word]#self.tokenizer.tokenize(word)
-                know_sent += add_word 
-                seg += [0] * len(add_word)
-                pos += pos_idx_tree[i][0]
+            # print(word, i)
+            # if i not in skip_idx:
+            add_word = [word]#self.tokenizer.tokenize(word)
+            know_sent += add_word 
+            seg += [0] * len(add_word)
+            pos += pos_idx_tree[i][0]
 
             for j in range(len(sent_tree[i][1])):
                 add_word = [sent_tree[i][1][j]]
                 know_sent += add_word
                 seg += [1] #* len(add_word)
-                pos += [pos_idx_tree[i][1][j]]
+                pos += pos_idx_tree[i][1][j]
 
         token_num = len(know_sent)
-        assert token_num == abs_idx_tree, "length of know_sent = abs_idx_tree maximum idx"
+        # assert token_num == abs_idx_tree, "length of know_sent = abs_idx_tree maximum idx"
         # Calculate visible matrix
         visible_matrix = np.zeros((token_num, token_num))
-        print(visible_matrix.shape)
-        print(abs_idx_tree)
+        # print(visible_matrix.shape)
+        # print(abs_idx_tree)
         for item in abs_idx_tree:
             src_ids = item[0]
             for id in src_ids:
@@ -246,18 +261,11 @@ class DittoDataset(data.Dataset):
         # visible_matrix_batch.append(visible_matrix)
         # seg_batch.append(seg)
 
-        print(
-                know_sent,
-                pos,
-                visible_matrix,
-                seg
-            )
-        raise NotImplementedError
     
-        return [know_sent], [pos], [visible_matrix], [seg]
+        return know_sent, pos, visible_matrix, seg
 
-    @staticmethod
-    def pad(batch):
+    # @staticmethod
+    def pad(self, batch):
         """Merge a list of dataset items into a train/test batch
         Args:
             batch (list of tuple): a list of dataset items
@@ -278,23 +286,20 @@ class DittoDataset(data.Dataset):
                    torch.LongTensor(x2), \
                    torch.LongTensor(y)
         elif len(batch[0]) == 6:
-            x1, x2, x3, x4, x5, y = zip(*batch)
-            print(x1, x2, x3, x4, x5, y)
-            raise NotImplementedError
+            #  know_sent, pos, visible_matrix, seg
+            x1, y, x2, x3, x4, x5 = zip(*batch)
 
-            maxlen = max([len(x) for x in x1+x2+x3+x4+x5])
-            x1 = [xi + [0]*(maxlen - len(xi)) for xi in x1]
-            x2 = [xi + [0]*(maxlen - len(xi)) for xi in x2]
-            x3 = [xi + [0]*(maxlen - len(xi)) for xi in x3]
+            # maxlen = max([len(x) for x in x1+x3+x4])
+            # x1 = [xi + [0]*(maxlen - len(xi)) for xi in x1]
+            # x2 = [xi + [0]*(maxlen - len(xi)) for xi in x2]
+            # x3 = [xi + [maxlen-1]*(maxlen - len(xi)) for xi in x3]
             # x3 = [a + [0]*(maxlen - len(xi)) for xi in x3 for a in xi]
-            x4 = [xi + [0]*(maxlen - len(xi)) for xi in x4]
-            x5 = [xi + [0]*(maxlen - len(xi)) for xi in x5]
-            return torch.LongTensor(x1), \
-                   torch.LongTensor(x2), \
-                   torch.LongTensor(x3), \
-                   torch.LongTensor(x4), \
-                   torch.LongTensor(x5), \
-                   torch.LongTensor(y)
+            # x4 = [xi + [0]*(maxlen - len(xi)) for xi in x4]
+            # x5 = [xi + [0]*(maxlen - len(xi)) for xi in x5]
+            return  torch.LongTensor(x1), \
+                    torch.LongTensor(x3), \
+                    torch.LongTensor(x4), \
+                    torch.LongTensor(y)
         else:
             x12, y = zip(*batch)
             maxlen = max([len(x) for x in x12])
