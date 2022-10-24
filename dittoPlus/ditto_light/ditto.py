@@ -40,7 +40,7 @@ class DittoModel(nn.Module):
         self.fc = torch.nn.Linear(hidden_size, 2)
 
 
-    def forward(self, x1, x2=None, vm=None):
+    def forward(self, x1, x2=None, vm=None, position_ids=None):
         """Encode the left, right, and the concatenation of left+right.
 
         Args:
@@ -55,7 +55,7 @@ class DittoModel(nn.Module):
             # MixDA
             x2 = x2.to(self.device) # (batch_size, seq_len)
 
-            enc = self.bert(torch.cat((x1, x2)), attention_mask=vm)[0][:, 0, :]
+            enc = self.bert(torch.cat((x1, x2)), attention_mask=vm, position_ids=position_ids)[0][:, 0, :]
             batch_size = len(x1)
             enc1 = enc[:batch_size] # (batch_size, emb_size)
             enc2 = enc[batch_size:] # (batch_size, emb_size)
@@ -63,9 +63,9 @@ class DittoModel(nn.Module):
             aug_lam = np.random.beta(self.alpha_aug, self.alpha_aug)
             enc = enc1 * aug_lam + enc2 * (1.0 - aug_lam)
         else:
-            print(vm)
-            raise NotImplementedError
-            enc = self.bert(x1, attention_mask=vm)[0][:, 0, :]
+            # print(vm)
+            # raise NotImplementedError
+            enc = self.bert(x1, attention_mask=vm, position_ids=position_ids)[0][:, 0, :]
 
         return self.fc(enc) # .squeeze() # .sigmoid()
 
@@ -134,12 +134,12 @@ def train_step(train_iter, model, optimizer, scheduler, hp):
         if len(batch) == 2:
             x,y = batch
             prediction = model(x)         
-        elif len(batch) == 6:
+        elif len(batch) == 4:
             # x, self.labels[idx],know_sent_batch,position_batch,visible_matrix_batch,seg_batch
-            x, y, know_sent_batch,position_batch,visible_matrix_batch,seg_batch = batch
+            x, position_batch, visible_matrix_batch, y = batch
             # print(batch)
             # raise NotImplementedError
-            prediction = model(x, vm=visible_matrix_batch) #TODO pass know_sent_batch,position_batch,visible_matrix_batch,seg_batch with x to the model 
+            prediction = model(x, vm=visible_matrix_batch, position_ids=position_batch) #TODO pass know_sent_batch,position_batch,visible_matrix_batch,seg_batch with x to the model 
         else:
             x1, x2, y = batch
             prediction = model(x1, x2)
@@ -199,7 +199,7 @@ def train(trainset, validset, testset, run_tag, hp):
     model = DittoModel(device=device,
                        lm=hp.lm,
                        alpha_aug=hp.alpha_aug)
-    model = model.cuda()
+    model = model.to(device)
     optimizer = AdamW(model.parameters(), lr=hp.lr)
 
     if hp.fp16:

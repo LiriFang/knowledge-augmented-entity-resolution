@@ -101,7 +101,6 @@ def ensure_path_exists(output_path):
 
 
 def extract_features_to_csv(output_path, parquet_values):
-    # with some preparators 
     verify_keys = False
     first_keys = None
     i = 0
@@ -167,26 +166,3 @@ def extract_features_to_csv(output_path, parquet_values):
     print(
         f"Finished. Processed {i} rows in {datetime.now() - start}, key_count={key_count}"
     )
-
-def extract_features_to_csv_1(output_path, df_values):
-    """
-    write preprocessed dataframe 
-    """
-    # with some preparators 
-    ensure_path_exists(output_path)
-
-    with open(output_path, "w") as outfile:
-        # Comparable performance with using pool.imap directly, but the code is *much* cleaner
-        # for keys, values_str in seq(map(as_py_str, parquet_values)) \
-        df_values
-        .apply(to_string_list, axis=0)
-        .apply(random_sample, axis=0)
-        .apply(normalise_string_whitespace, axis=0)
-        .apply(extract_features, axis=0)
-        .apply(numeric_values_to_str, axis=0)
-        .apply(drop_keys, axis=0)
-        outfile.write(values_str)
-
-    # print(
-    #     f"Finished. Processed {i} rows in {datetime.now() - start}, key_count={key_count}"
-    # )

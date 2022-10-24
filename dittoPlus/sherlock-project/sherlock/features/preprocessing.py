@@ -21,15 +21,15 @@ from sherlock.features.helpers import literal_eval_as_str, keys_to_csv
 
 def prepare_feature_extraction():
     """Download embedding files from Google Drive if they do not exist yet."""
-    word_embedding_file = "sherlock_project/sherlock/features/glove.6B.50d.txt"
+    word_embedding_file = "../sherlock/features/glove.6B.50d.txt"
     first_paragraph_vector_file = (
-        "sherlock_project/sherlock/features/par_vec_trained_400.pkl.docvecs.vectors_docs.npy"
+        "../sherlock/features/par_vec_trained_400.pkl.docvecs.vectors_docs.npy"
     )
     second_paragraph_vector_file = (
-        "sherlock_project/sherlock/features/par_vec_trained_400.pkl.trainables.syn1neg.npy"
+        "../sherlock/features/par_vec_trained_400.pkl.trainables.syn1neg.npy"
     )
     third_paragraph_vector_file = (
-        "sherlock_project/sherlock/features/par_vec_trained_400.pkl.wv.vectors.npy"
+        "../sherlock/features/par_vec_trained_400.pkl.wv.vectors.npy"
     )
 
     print(
@@ -137,9 +137,7 @@ def convert_string_lists_to_lists(
 
 def load_parquet_values(path):
     pf = ParquetFile(source=path)
-    print(pf)
     row_df = pf.read_row_group(0)
-    print(row_df)
 
     return row_df["values"]
 
