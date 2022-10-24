@@ -189,3 +189,4 @@ model_files/classes_sherlock.npy
 
 *.slurm
 
+dittoPlus/sbatch_examples.sh
