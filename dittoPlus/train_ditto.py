@@ -9,11 +9,11 @@ import torch
 import numpy as np
 import random
 
-# from tensorflow.keras import backend as K
-# import tensorflow as tf
-# gpus = tf.config.experimental.list_physical_devices('GPU')
-# for gpu in gpus:
-#   tf.config.experimental.set_memory_growth(gpu, True)
+from tensorflow.keras import backend as K
+import tensorflow as tf
+gpus = tf.config.experimental.list_physical_devices('GPU')
+for gpu in gpus:
+  tf.config.experimental.set_memory_growth(gpu, True)
 
 
 sys.path.insert(0, "Snippext_public")
@@ -108,6 +108,8 @@ if __name__=="__main__":
 
 
     # load train/dev/test sets
+    # print(hp.kbert)
+    # raise NotImplementedError
     train_dataset = DittoDataset(trainset,
                                    lm=hp.lm,
                                    max_len=hp.max_len,

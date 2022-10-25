@@ -65,6 +65,8 @@ class DittoModel(nn.Module):
         else:
             # print(vm)
             # raise NotImplementedError
+            if vm is not None and position_ids is not None:
+                vm, position_ids = vm.to(self.device), position_ids.to(self.device)
             enc = self.bert(x1, attention_mask=vm, position_ids=position_ids)[0][:, 0, :]
 
         return self.fc(enc) # .squeeze() # .sigmoid()
@@ -88,8 +90,15 @@ def evaluate(model, iterator, threshold=None):
     all_probs = []
     with torch.no_grad():
         for batch in iterator:
-            x, y = batch
-            logits = model(x)
+            if len(batch) == 2:
+                x, y = batch
+                logits = model(x)
+            elif len(batch) == 4:
+                x, position_batch, visible_matrix_batch, y = batch
+                # visible_matrix_batch, position_batch = visible_matrix_batch.to(model.device), position_batch.to(model.device)
+                logits = model(x, vm=visible_matrix_batch, position_ids=position_batch)
+                del position_batch, visible_matrix_batch
+            
             probs = logits.softmax(dim=1)[:, 1]
             all_probs += probs.cpu().numpy().tolist()
             all_y += y.cpu().numpy().tolist()
@@ -137,9 +146,13 @@ def train_step(train_iter, model, optimizer, scheduler, hp):
         elif len(batch) == 4:
             # x, self.labels[idx],know_sent_batch,position_batch,visible_matrix_batch,seg_batch
             x, position_batch, visible_matrix_batch, y = batch
-            # print(batch)
+            # print(visible_matrix_batch.shape)
             # raise NotImplementedError
-            prediction = model(x, vm=visible_matrix_batch, position_ids=position_batch) #TODO pass know_sent_batch,position_batch,visible_matrix_batch,seg_batch with x to the model 
+            # visible_matrix_batch, position_batch = visible_matrix_batch.to(model.device), position_batch.to(model.device)
+            # prediction = model(x, vm=visible_matrix_batch, position_ids=position_batch) #TODO pass know_sent_batch,position_batch,visible_matrix_batch,seg_batch with x to the model 
+            prediction = model(x, vm=None, position_ids=None) #TODO pass know_sent_batch,position_batch,visible_matrix_batch,seg_batch with x to the model 
+            del position_batch, visible_matrix_batch
+
         else:
             x1, x2, y = batch
             prediction = model(x1, x2)
@@ -156,7 +169,7 @@ def train_step(train_iter, model, optimizer, scheduler, hp):
         if i % 10 == 0: # monitoring
             print(f"step: {i}, loss: {loss.item()}")
         del loss
-
+        
 
 def train(trainset, validset, testset, run_tag, hp):
     """Train and evaluate the model
