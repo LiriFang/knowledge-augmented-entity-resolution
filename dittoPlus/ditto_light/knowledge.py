@@ -148,7 +148,32 @@ class EntityLinkingDKInjector(DKInjector):
         self.log_path = 'output/refined_outputs.txt'
         self.log_file = open(self.log_path, 'w')
 
-    def transform(self, entry):
+    def transform_file(self, input_fn, overwrite=False):
+        """Transform all lines of a tsv file.
+
+        Run the knowledge injector. If the output already exists, just return the file name.
+
+        Args:
+            input_fn (str): the input file name
+            overwrite (bool, optional): if true, then overwrite any cached output
+
+        Returns:
+            str: the output file name
+        """
+        out_fn = input_fn + '.refined.dk'
+        if not os.path.exists(out_fn) or \
+            os.stat(out_fn).st_size == 0 or overwrite:
+
+            with open(out_fn, 'w') as fout:
+                for line in tqdm(open(input_fn)):
+                    LL = line.split('\t')
+                    if len(LL) == 3:
+                        entry0 = self.transform(LL[0])
+                        entry1 = self.transform(LL[1])
+                        fout.write(entry0 + '\t' + entry1 + '\t' + LL[2])
+        return out_fn
+
+    def transform(self, entry, use_kbert=True):
         """Transform a data entry.
 
         Use NER to regconize the product-related named entities and
@@ -194,9 +219,17 @@ class EntityLinkingDKInjector(DKInjector):
                         #                 + text[span.start + span.ln:]
                         
                         # new annotation for K-BERT
-                        text = text[:span.start] \
-                                + "<head>" + text[span.start:span.start + span.ln] + "</head>" \
-                                    + "<tail>" + spanType + "</tail>" \
+                        if use_kbert:
+                            text = text[:span.start] \
+                                    + "<head>" + text[span.start:span.start + span.ln] + "</head>" \
+                                        + "<tail>" + spanType + "</tail>" \
+                                            + text[span.start + span.ln:]
+                            # print(text)
+                            # raise NotImplementedError
+                        else:
+                            text = text[:span.start] \
+                                + text[span.start:span.start + span.ln] \
+                                    + ' (' + spanType + ')' \
                                         + text[span.start + span.ln:]
                     else:
                         text = entry
