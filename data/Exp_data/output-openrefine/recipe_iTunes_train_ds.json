@@ -1,0 +1,291 @@
+[
+  {
+    "op": "core/text-transform",
+    "engineConfig": {
+      "facets": [
+        {
+          "type": "list",
+          "name": "Price",
+          "expression": "value",
+          "columnName": "Price",
+          "invert": false,
+          "omitBlank": false,
+          "omitError": false,
+          "selection": [
+            {
+              "v": {
+                "v": "Album Only",
+                "l": "Album Only"
+              }
+            }
+          ],
+          "selectBlank": true,
+          "selectError": false
+        }
+      ],
+      "mode": "row-based"
+    },
+    "columnName": "Price",
+    "expression": "grel:if(cells['Song_Name'].value.contains(/\\$\\s\\d+\\.?\\d+/),cells['Song_Name'].value.find(/\\$\\s\\d+\\.?\\d+/)[0], '')",
+    "onError": "keep-original",
+    "repeat": false,
+    "repeatCount": 10,
+    "description": "Text transform on cells in column Price using expression grel:if(cells['Song_Name'].value.contains(/\\$\\s\\d+\\.?\\d+/),cells['Song_Name'].value.find(/\\$\\s\\d+\\.?\\d+/)[0], '')"
+  },
+  {
+    "op": "core/text-transform",
+    "engineConfig": {
+      "facets": [
+        {
+          "type": "list",
+          "name": "Released",
+          "expression": "value",
+          "columnName": "Released",
+          "invert": false,
+          "omitBlank": false,
+          "omitError": false,
+          "selection": [
+            {
+              "v": {
+                "v": "2009",
+                "l": "2009"
+              }
+            },
+            {
+              "v": {
+                "v": "2008",
+                "l": "2008"
+              }
+            }
+          ],
+          "selectBlank": true,
+          "selectError": false
+        }
+      ],
+      "mode": "row-based"
+    },
+    "columnName": "Released",
+    "expression": "grel:if(cells['Song_Name'].value.contains(/\\d+-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-\\d+/),cells['Song_Name'].value.find(/\\d+-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-\\d+/)[0], '')",
+    "onError": "keep-original",
+    "repeat": false,
+    "repeatCount": 10,
+    "description": "Text transform on cells in column Released using expression grel:if(cells['Song_Name'].value.contains(/\\d+-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-\\d+/),cells['Song_Name'].value.find(/\\d+-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-\\d+/)[0], '')"
+  },
+  {
+    "op": "core/text-transform",
+    "engineConfig": {
+      "facets": [
+        {
+          "type": "list",
+          "name": "Time",
+          "expression": "value",
+          "columnName": "Time",
+          "invert": false,
+          "omitBlank": false,
+          "omitError": false,
+          "selection": [
+            {
+              "v": {
+                "v": "--",
+                "l": "--"
+              }
+            }
+          ],
+          "selectBlank": true,
+          "selectError": false
+        }
+      ],
+      "mode": "row-based"
+    },
+    "columnName": "Time",
+    "expression": "grel:if(cells['Song_Name'].value.contains(/\\d+:\\d+/),cells['Song_Name'].value.find(/\\d+:\\d+/)[0], '')",
+    "onError": "keep-original",
+    "repeat": false,
+    "repeatCount": 10,
+    "description": "Text transform on cells in column Time using expression grel:if(cells['Song_Name'].value.contains(/\\d+:\\d+/),cells['Song_Name'].value.find(/\\d+:\\d+/)[0], '')"
+  },
+  {
+    "op": "core/text-transform",
+    "engineConfig": {
+      "facets": [],
+      "mode": "row-based"
+    },
+    "columnName": "Song_Name",
+    "expression": "grel:if(value.contains(cells['Price'].value),value.replace(cells['Price'].value,''),value)",
+    "onError": "keep-original",
+    "repeat": false,
+    "repeatCount": 10,
+    "description": "Text transform on cells in column Song_Name using expression grel:if(value.contains(cells['Price'].value),value.replace(cells['Price'].value,''),value)"
+  },
+  {
+    "op": "core/text-transform",
+    "engineConfig": {
+      "facets": [],
+      "mode": "row-based"
+    },
+    "columnName": "Song_Name",
+    "expression": "grel:if(value.contains(cells['Time'].value),value.replace(cells['Time'].value,''),value)",
+    "onError": "keep-original",
+    "repeat": false,
+    "repeatCount": 10,
+    "description": "Text transform on cells in column Song_Name using expression grel:if(value.contains(cells['Time'].value),value.replace(cells['Time'].value,''),value)"
+  },
+  {
+    "op": "core/text-transform",
+    "engineConfig": {
+      "facets": [],
+      "mode": "row-based"
+    },
+    "columnName": "Song_Name",
+    "expression": "grel:if(value.contains(cells['Released'].value),value.replace(cells['Released'].value,''),value)",
+    "onError": "keep-original",
+    "repeat": false,
+    "repeatCount": 10,
+    "description": "Text transform on cells in column Song_Name using expression grel:if(value.contains(cells['Released'].value),value.replace(cells['Released'].value,''),value)"
+  },
+  {
+    "op": "core/text-transform",
+    "engineConfig": {
+      "facets": [],
+      "mode": "row-based"
+    },
+    "columnName": "CopyRight",
+    "expression": "grel:value.replace('‰ ãÑ','')",
+    "onError": "keep-original",
+    "repeat": false,
+    "repeatCount": 10,
+    "description": "Text transform on cells in column CopyRight using expression grel:value.replace('‰ ãÑ','')"
+  },
+  {
+    "op": "core/text-transform",
+    "engineConfig": {
+      "facets": [],
+      "mode": "row-based"
+    },
+    "columnName": "CopyRight",
+    "expression": "value.trim()",
+    "onError": "keep-original",
+    "repeat": false,
+    "repeatCount": 10,
+    "description": "Text transform on cells in column CopyRight using expression value.trim()"
+  },
+  {
+    "op": "core/text-transform",
+    "engineConfig": {
+      "facets": [],
+      "mode": "row-based"
+    },
+    "columnName": "Song_Name",
+    "expression": "grel:value.replace('‰ ãÑ','')",
+    "onError": "keep-original",
+    "repeat": false,
+    "repeatCount": 10,
+    "description": "Text transform on cells in column Song_Name using expression grel:value.replace('‰ ãÑ','')"
+  },
+  {
+    "op": "core/text-transform",
+    "engineConfig": {
+      "facets": [
+        {
+          "type": "list",
+          "name": "CopyRight",
+          "expression": "value",
+          "columnName": "CopyRight",
+          "invert": false,
+          "omitBlank": false,
+          "omitError": false,
+          "selection": [],
+          "selectBlank": true,
+          "selectError": false
+        }
+      ],
+      "mode": "row-based"
+    },
+    "columnName": "CopyRight",
+    "expression": "grel:if(cells['Song_Name'].value.contains(/\\d{4}(.*)/),cells['Song_Name'].value.find(/\\d{4}(.*)/)[0], '')",
+    "onError": "keep-original",
+    "repeat": false,
+    "repeatCount": 10,
+    "description": "Text transform on cells in column CopyRight using expression grel:if(cells['Song_Name'].value.contains(/\\d{4}(.*)/),cells['Song_Name'].value.find(/\\d{4}(.*)/)[0], '')"
+  },
+  {
+    "op": "core/text-transform",
+    "engineConfig": {
+      "facets": [],
+      "mode": "row-based"
+    },
+    "columnName": "Song_Name",
+    "expression": "grel:if(value.contains(cells['CopyRight'].value),value.replace(cells['CopyRight'].value,''),value)",
+    "onError": "keep-original",
+    "repeat": false,
+    "repeatCount": 10,
+    "description": "Text transform on cells in column Song_Name using expression grel:if(value.contains(cells['CopyRight'].value),value.replace(cells['CopyRight'].value,''),value)"
+  },
+  {
+    "op": "core/column-addition",
+    "engineConfig": {
+      "facets": [
+        {
+          "type": "list",
+          "name": "Song_Name_Clean",
+          "expression": "value",
+          "columnName": "Song_Name_Clean",
+          "invert": true,
+          "omitBlank": false,
+          "omitError": false,
+          "selection": [],
+          "selectBlank": true,
+          "selectError": false
+        }
+      ],
+      "mode": "row-based"
+    },
+    "baseColumnName": "Song_Name",
+    "expression": "grel:value",
+    "onError": "set-to-blank",
+    "newColumnName": "Song_Name_cp",
+    "columnInsertIndex": 1,
+    "description": "Create column Song_Name_cp at index 1 based on column Song_Name using expression grel:value"
+  },
+  {
+    "op": "core/text-transform",
+    "engineConfig": {
+      "facets": [],
+      "mode": "row-based"
+    },
+    "columnName": "Song_Name",
+    "expression": "grel:if(value.contains(/(.*)\\((.*)\\s\\)/),value.find(/(.*)\\((.*)\\s\\)/)[0], value)",
+    "onError": "keep-original",
+    "repeat": false,
+    "repeatCount": 10,
+    "description": "Text transform on cells in column Song_Name using expression grel:if(value.contains(/(.*)\\((.*)\\s\\)/),value.find(/(.*)\\((.*)\\s\\)/)[0], value)"
+  },
+  {
+    "op": "core/column-addition",
+    "engineConfig": {
+      "facets": [],
+      "mode": "row-based"
+    },
+    "baseColumnName": "Song_Name",
+    "expression": "grel:if(value.contains(cells['Song_Name_Clean'].value),'yes','no')",
+    "onError": "set-to-blank",
+    "newColumnName": "EL_value_flag",
+    "columnInsertIndex": 1,
+    "description": "Create column EL_value_flag at index 1 based on column Song_Name using expression grel:if(value.contains(cells['Song_Name_Clean'].value),'yes','no')"
+  },
+  {
+    "op": "core/column-removal",
+    "columnName": "EL_value_flag",
+    "description": "Remove column EL_value_flag"
+  },
+  {
+    "op": "core/column-removal",
+    "columnName": "Song_Name_cp",
+    "description": "Remove column Song_Name_cp"
+  },
+  {
+    "op": "core/column-removal",
+    "columnName": "Song_Name_Clean",
+    "description": "Remove column Song_Name_Clean"
+  }
+]
