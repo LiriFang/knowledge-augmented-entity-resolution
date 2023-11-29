@@ -1,4 +1,5 @@
-absl-py==0.7.1
+# absl-py==0.7.1
+absl-py
 astor==0.8.0
 boto==2.49.0
 boto3==1.9.188
@@ -37,11 +38,13 @@ s3transfer==0.2.1
 scikit-learn==0.24
 six==1.12.0
 smart-open==1.8.4
-scipy==1.5.4
+# scipy==1.5.4
+scipy
 setuptools~=47.1.0
 termcolor==1.1.0
 tqdm==4.51.0
 urllib3==1.25.3
 Werkzeug==0.15.4
-wrapt==1.11.2
+# wrapt==1.11.2
+wrapt==1.14.0
 -e .
