@@ -81,16 +81,17 @@ if __name__=="__main__":
         testset = injector.transform_file(testset, overwrite=True)
 
     # load train/dev/test sets
-    # train_dataset = DittoDataset(trainset,
-    #                                lm=hp.lm,
-    #                                max_len=hp.max_len,
-    #                                size=hp.size,
-    #                                da=hp.da)
-    # valid_dataset = DittoDataset(validset, lm=hp.lm)
-    # test_dataset = DittoDataset(testset, lm=hp.lm)
+    # TODO： required recording 
+    train_dataset = DittoDataset(trainset,
+                                   lm=hp.lm,
+                                   max_len=hp.max_len,
+                                   size=hp.size,
+                                   da=hp.da)
+    valid_dataset = DittoDataset(validset, lm=hp.lm)
+    test_dataset = DittoDataset(testset, lm=hp.lm)
 
-    # # train and evaluate the model
-    # train(train_dataset,
-    #       valid_dataset,
-    #       test_dataset,
-    #       run_tag, hp)
+    # train and evaluate the model
+    train(train_dataset,
+          valid_dataset,
+          test_dataset,
+          run_tag, hp)
