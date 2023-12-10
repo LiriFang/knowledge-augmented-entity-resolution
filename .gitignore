@@ -172,3 +172,6 @@ dittoPlus/data
 events.out.tfevents*
 temporary_*.csv
 *.dk
+
+lanl2/sherlock-project
+sherlock/
