@@ -71,7 +71,7 @@ class DittoModel(nn.Module):
             if vm is not None and position_ids is not None:
                 vm, position_ids = vm.to(self.device), position_ids.to(self.device)
             enc = self.bert(x1, attention_mask=vm, position_ids=position_ids)[0][:, 0, :]
-
+        print(f'enc is {enc}')
         return self.fc(enc) # .squeeze() # .sigmoid()
 
 
