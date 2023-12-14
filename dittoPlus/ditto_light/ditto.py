@@ -11,9 +11,14 @@ import argparse
 
 from .dataset import DittoDataset
 from torch.utils import data
-from transformers import AutoModel, AdamW, get_linear_schedule_with_warmup
+from transformers import AutoModel, AdamW, RobertaModel, get_linear_schedule_with_warmup
 from tensorboardX import SummaryWriter
 # from apex import amp
+<<<<<<< HEAD
+=======
+
+from .models import RobertaWithVM
+>>>>>>> main
 
 lm_mp = {'roberta': 'roberta-base',
          'distilbert': 'distilbert-base-uncased'}
@@ -24,7 +29,9 @@ class DittoModel(nn.Module):
     def __init__(self, device='cuda', lm='roberta', alpha_aug=0.8):
         super().__init__()
         if lm in lm_mp:
-            self.bert = AutoModel.from_pretrained(lm_mp[lm])
+            # self.bert = RobertaModel.from_pretrained(lm_mp[lm])
+            # self.bert = AutoModel.from_pretrained(lm_mp[lm])
+            self.bert = RobertaWithVM.from_pretrained(lm_mp[lm])
         else:
             self.bert = AutoModel.from_pretrained(lm)
 
@@ -36,7 +43,7 @@ class DittoModel(nn.Module):
         self.fc = torch.nn.Linear(hidden_size, 2)
 
 
-    def forward(self, x1, x2=None):
+    def forward(self, x1, x2=None, vm=None, position_ids=None):
         """Encode the left, right, and the concatenation of left+right.
 
         Args:
@@ -50,7 +57,8 @@ class DittoModel(nn.Module):
         if x2 is not None:
             # MixDA
             x2 = x2.to(self.device) # (batch_size, seq_len)
-            enc = self.bert(torch.cat((x1, x2)))[0][:, 0, :]
+
+            enc = self.bert(torch.cat((x1, x2)), attention_mask=vm, position_ids=position_ids)[0][:, 0, :]
             batch_size = len(x1)
             enc1 = enc[:batch_size] # (batch_size, emb_size)
             enc2 = enc[batch_size:] # (batch_size, emb_size)
@@ -58,7 +66,11 @@ class DittoModel(nn.Module):
             aug_lam = np.random.beta(self.alpha_aug, self.alpha_aug)
             enc = enc1 * aug_lam + enc2 * (1.0 - aug_lam)
         else:
-            enc = self.bert(x1)[0][:, 0, :]
+            # print(vm)
+            # raise NotImplementedError
+            if vm is not None and position_ids is not None:
+                vm, position_ids = vm.to(self.device), position_ids.to(self.device)
+            enc = self.bert(x1, attention_mask=vm, position_ids=position_ids)[0][:, 0, :]
 
         return self.fc(enc) # .squeeze() # .sigmoid()
 
@@ -81,8 +93,15 @@ def evaluate(model, iterator, threshold=None):
     all_probs = []
     with torch.no_grad():
         for batch in iterator:
-            x, y = batch
-            logits = model(x)
+            if len(batch) == 2:
+                x, y = batch
+                logits = model(x)
+            elif len(batch) == 4:
+                x, position_batch, visible_matrix_batch, y = batch
+                # visible_matrix_batch, position_batch = visible_matrix_batch.to(model.device), position_batch.to(model.device)
+                logits = model(x, vm=visible_matrix_batch, position_ids=position_batch)
+                del position_batch, visible_matrix_batch
+            
             probs = logits.softmax(dim=1)[:, 1]
             all_probs += probs.cpu().numpy().tolist()
             all_y += y.cpu().numpy().tolist()
@@ -121,11 +140,22 @@ def train_step(train_iter, model, optimizer, scheduler, hp):
     criterion = nn.CrossEntropyLoss()
     # criterion = nn.MSELoss()
     for i, batch in enumerate(train_iter):
+        # print(len(batch))
         optimizer.zero_grad()
 
         if len(batch) == 2:
-            x, y = batch
-            prediction = model(x)
+            x,y = batch
+            prediction = model(x)         
+        elif len(batch) == 4:
+            # x, self.labels[idx],know_sent_batch,position_batch,visible_matrix_batch,seg_batch
+            x, position_batch, visible_matrix_batch, y = batch
+            # print(visible_matrix_batch.shape)
+            # raise NotImplementedError
+            # visible_matrix_batch, position_batch = visible_matrix_batch.to(model.device), position_batch.to(model.device)
+            # prediction = model(x, vm=visible_matrix_batch, position_ids=position_batch) #TODO pass know_sent_batch,position_batch,visible_matrix_batch,seg_batch with x to the model 
+            prediction = model(x, vm=None, position_ids=None) #TODO pass know_sent_batch,position_batch,visible_matrix_batch,seg_batch with x to the model 
+            del position_batch, visible_matrix_batch
+
         else:
             x1, x2, y = batch
             prediction = model(x1, x2)
@@ -142,7 +172,7 @@ def train_step(train_iter, model, optimizer, scheduler, hp):
         if i % 10 == 0: # monitoring
             print(f"step: {i}, loss: {loss.item()}")
         del loss
-
+        
 
 def train(trainset, validset, testset, run_tag, hp):
     """Train and evaluate the model
@@ -177,11 +207,15 @@ def train(trainset, validset, testset, run_tag, hp):
                                  collate_fn=padder)
 
     # initialize model, optimizer, and LR scheduler
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    # device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    if hp.device == 'cpu':
+        device = 'cpu'
+    else:
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model = DittoModel(device=device,
                        lm=hp.lm,
                        alpha_aug=hp.alpha_aug)
-    model = model.cuda()
+    model = model.to(device)
     optimizer = AdamW(model.parameters(), lr=hp.lr)
 
     if hp.fp16:

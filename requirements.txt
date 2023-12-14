@@ -6,7 +6,7 @@ geopy==2.2.0
 # spacy-entity-linker==1.0.1
 
 # For BLINK EL
-torch==1.6.0
+# torch==1.6.0
 pysolr==3.8.1
 emoji==0.5.3
 regex==2019.8.19

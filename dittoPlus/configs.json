@@ -39,6 +39,7 @@
     "validset": "../data/er_magellan/Structured/DBLP-GoogleScholar/valid.txt",
     "testset": "../data/er_magellan/Structured/DBLP-GoogleScholar/test.txt"
     },
+<<<<<<< HEAD
     {
       "name": "Structured/iTunes-Amazon",
       "task_type": "classification",
@@ -46,5 +47,14 @@
       "trainset": "../data/er_magellan/Structured/iTunes-Amazon/train.txt",
       "validset": "../data/er_magellan/Structured/iTunes-Amazon/valid.txt",
       "testset": "../data/er_magellan/Structured/iTunes-Amazon/test.txt"
+=======
+  {
+    "name": "Structured/DBLP-ACM",
+    "task_type": "classification",
+    "vocab": ["0", "1"],
+    "trainset": "../data/er_magellan/Structured/DBLP-ACM/train.txt",
+    "validset": "../data/er_magellan/Structured/DBLP-ACM/valid.txt",
+    "testset": "../data/er_magellan/Structured/DBLP-ACM/test.txt"
+>>>>>>> main
     }
 ]

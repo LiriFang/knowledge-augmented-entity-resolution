@@ -172,6 +172,27 @@ dittoPlus/data
 events.out.tfevents*
 temporary_*.csv
 *.dk
+<<<<<<< HEAD
 
 lanl2/sherlock-project
 sherlock/
+=======
+dittoPlus/par_vec_trained_*
+glove.6B.50d.txt
+
+*.zip
+._data
+._.DS_Store
+
+*.csv
+*.parquet
+*.out
+*.pkl*
+*.h5
+*.tsv
+model_files/classes_sherlock.npy
+
+*.slurm
+
+dittoPlus/sbatch_examples.sh
+>>>>>>> main
