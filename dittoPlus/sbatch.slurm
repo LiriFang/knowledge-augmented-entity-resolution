@@ -1,9 +1,5 @@
 #!/bin/bash
-<<<<<<< HEAD
 #SBATCH --account=bces-delta-gpu
-=======
-#SBATCH --account=bbno-delta-gpu
->>>>>>> main
 ### GPU options ###
 #SBATCH --partition=gpuA100x4      # <- or one of: gpuA100x4 gpuA40x4 gpuA100x8 gpuMI100x8
 #SBATCH --nodes=1
@@ -20,16 +16,13 @@
 ##SBATCH --mail-user=yirenl2@illinois.edu
 ##SBATCH --mail-type="BEGIN,END" See sbatch or srun man pages for more email options 
  
-export PYTHONPATH=$PYTHONPATH:/projects/bbno/yirenl2/ReFinED/src
+export PYTHONPATH=$PYTHONPATH:/projects/bces/yirenl2/ReFinED/src
 
 # python train_ditto.py --dk entityLinking --task Dirty/DBLP-GoogleScholar
 # python train_ditto.py --dk entityLinking --task Textual/Abt-Buy
 # python train_ditto.py --dk entityLinking --task Dirty/iTunes-Amazon
 
 # python train_ditto.py --dk sherlock --task Dirty/iTunes-Amazon --batch_size 8 --max_len 512
-<<<<<<< HEAD
 # python train_ditto.py --dk sherlock --task Textual/Abt-Buy --batch_size 8 --max_len 512
 python train_ditto.py --dk sherlock --task Structured/iTunes-Amazon
-=======
-python train_ditto.py --dk sherlock --task Textual/Abt-Buy --batch_size 8 --max_len 512
->>>>>>> main
+# python train_ditto.py --dk sherlock --task Textual/Abt-Buy --batch_size 8 --max_len 512
