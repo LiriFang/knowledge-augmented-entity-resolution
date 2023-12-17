@@ -14,11 +14,7 @@ from torch.utils import data
 from transformers import AutoModel, AdamW, RobertaModel, get_linear_schedule_with_warmup
 from tensorboardX import SummaryWriter
 # from apex import amp
-<<<<<<< HEAD
-=======
-
 from .models import RobertaWithVM
->>>>>>> main
 
 lm_mp = {'roberta': 'roberta-base',
          'distilbert': 'distilbert-base-uncased'}
