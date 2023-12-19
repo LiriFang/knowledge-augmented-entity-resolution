@@ -173,67 +173,67 @@ if __name__=="__main__":
         validset= injector.transform_file(validset_input, validset, overwrite=hp.overwrite,prompt_type=hp.prompt)
         testset= injector.transform_file(testset_input, testset, overwrite=hp.overwrite,prompt_type=hp.prompt)
     
-    # load train/dev/test sets
-    # print(hp.kbert)
-    # raise NotImplementedError
-    # train_dataset = DittoDataset(trainset,
-    #                                lm=hp.lm,
-    #                                max_len=hp.max_len,
-    #                                size=hp.size,
-    #                                da=hp.da,
-    #                                kbert=hp.kbert)
-    # valid_dataset = DittoDataset(validset, lm=hp.lm, max_len=hp.max_len,
-    #                                size=hp.size,
-    #                                da=hp.da,
-    #                                kbert=hp.kbert)
-    # test_dataset = DittoDataset(testset, lm=hp.lm, max_len=hp.max_len,
-    #                                size=hp.size,
-    #                                da=hp.da,
-    #                                kbert=hp.kbert)
+    load train/dev/test sets
+    print(hp.kbert)
+    raise NotImplementedError
+    train_dataset = DittoDataset(trainset,
+                                   lm=hp.lm,
+                                   max_len=hp.max_len,
+                                   size=hp.size,
+                                   da=hp.da,
+                                   kbert=hp.kbert)
+    valid_dataset = DittoDataset(validset, lm=hp.lm, max_len=hp.max_len,
+                                   size=hp.size,
+                                   da=hp.da,
+                                   kbert=hp.kbert)
+    test_dataset = DittoDataset(testset, lm=hp.lm, max_len=hp.max_len,
+                                   size=hp.size,
+                                   da=hp.da,
+                                   kbert=hp.kbert)
 
-    # # train and evaluate the model
-    # model = train(train_dataset,
-    #       valid_dataset,
-    #       test_dataset,
-    #       run_tag, hp)
+    # train and evaluate the model
+    model = train(train_dataset,
+          valid_dataset,
+          test_dataset,
+          run_tag, hp)
     
-    # # predict the model
-    # # batch processing
-    # def process_batch(rows, pairs, writer):
-    #     predictions, logits = classify(rows, model, lm=hp.lm,
-    #                                     max_len=hp.max_len,
-    #                                     threshold=0.5)
-    #     # try:
-    #     #     predictions, logits = classify(pairs, model, lm=lm,
-    #     #                                    max_len=max_len,
-    #     #                                    threshold=threshold)
-    #     # except:
-    #     #     # ignore the whole batch
-    #     #     return
-    #     scores = softmax(logits, axis=1)
-    #     for pair, pred, score in zip(pairs, predictions, scores):
-    #         output = {'left': pair[0], 'right': pair[1],
-    #             'match': pred,
-    #             'match_confidence': score[int(pred)]}
-    #         writer.write(output)
+    # predict the model
+    # batch processing
+    def process_batch(rows, pairs, writer):
+        predictions, logits = classify(rows, model, lm=hp.lm,
+                                        max_len=hp.max_len,
+                                        threshold=0.5)
+        # try:
+        #     predictions, logits = classify(pairs, model, lm=lm,
+        #                                    max_len=max_len,
+        #                                    threshold=threshold)
+        # except:
+        #     # ignore the whole batch
+        #     return
+        scores = softmax(logits, axis=1)
+        for pair, pred, score in zip(pairs, predictions, scores):
+            output = {'left': pair[0], 'right': pair[1],
+                'match': pred,
+                'match_confidence': score[int(pred)]}
+            writer.write(output)
     
-    # start_time = time.time()
-    # os.makedirs(f'./output/{hp.task}', exist_ok=True)
-    # with jsonlines.open(f"./output/{hp.task}/result.jsonl", mode='w') as writer:
-    #     pairs = test_dataset.pairs # (e1, e2)
-    #     rows = test_dataset.rows # (e1, e2, \t, label)
-    #     for row in rows:
-    #         print(f'row content: {row}')
-    #     # pairs.append(to_str(row[0], row[1], summarizer, max_len, dk_injector))
-    #     # rows.append(row)
-    #     if len(pairs) == hp.batch_size:
-    #         process_batch(rows, pairs, writer)
-    #         pairs.clear()
-    #         rows.clear()
+    start_time = time.time()
+    os.makedirs(f'./output/{hp.task}', exist_ok=True)
+    with jsonlines.open(f"./output/{hp.task}/result.jsonl", mode='w') as writer:
+        pairs = test_dataset.pairs # (e1, e2)
+        rows = test_dataset.rows # (e1, e2, \t, label)
+        for row in rows:
+            print(f'row content: {row}')
+        # pairs.append(to_str(row[0], row[1], summarizer, max_len, dk_injector))
+        # rows.append(row)
+        if len(pairs) == hp.batch_size:
+            process_batch(rows, pairs, writer)
+            pairs.clear()
+            rows.clear()
 
-    #     if len(pairs) > 0:
-    #         process_batch(rows, pairs, writer)
+        if len(pairs) > 0:
+            process_batch(rows, pairs, writer)
 
-    # run_time = time.time() - start_time
-    # run_tag = '%s_lm=%s_dk=%s_su=%s' % (config['name'], hp.lm, str(hp.dk != None), str(hp.summarize != None))
-    # os.system('echo %s %f >> log.txt' % (run_tag, run_time))
+    run_time = time.time() - start_time
+    run_tag = '%s_lm=%s_dk=%s_su=%s' % (config['name'], hp.lm, str(hp.dk != None), str(hp.summarize != None))
+    os.system('echo %s %f >> log.txt' % (run_tag, run_time))
