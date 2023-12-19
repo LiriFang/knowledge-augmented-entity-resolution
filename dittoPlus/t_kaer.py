@@ -18,9 +18,6 @@ logging_info = {
         'Price': '',
         'Copyright': ''
     },
-    'prompting_method': ' ',
-    'kbert': False,
-    'EL': False,
     'ground truth': 0,
     'predicted result': 0,
     'vector(before)': [],
@@ -34,9 +31,17 @@ logging_info = {
     
     }
 
-def save(data, file):
-    with open(file, 'wt')as f:
-        json.dump(data, f)
+def read_ds():
+    pass
+
+
+def extract_info():
+    # this function is to extract knowledge information
+    # 
+    pass
+
+
+
     
 
 def main():

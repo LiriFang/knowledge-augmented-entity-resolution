@@ -34,6 +34,7 @@ class DittoDataset(data.Dataset):
         self.tokenizer.add_tokens(['<head>', '</head>','<tail>','</tail>'], special_tokens=True)
         self.pairs = []
         self.labels = []
+        self.rows = []
         self.max_len = max_len
         self.size = size
 
@@ -43,6 +44,7 @@ class DittoDataset(data.Dataset):
             lines = open(path, encoding='utf-8')
 
         for line in lines:
+            self.rows.append(line)
             s1, s2, label = line.strip().split('\t')
             self.pairs.append((s1, s2))
             self.labels.append(int(label))
@@ -264,7 +266,6 @@ class DittoDataset(data.Dataset):
     
         return know_sent, pos, visible_matrix, seg
 
-    # @staticmethod
     def pad(self, batch):
         """Merge a list of dataset items into a train/test batch
         Args:
