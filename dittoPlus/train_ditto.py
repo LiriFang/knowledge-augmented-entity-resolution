@@ -173,9 +173,7 @@ if __name__=="__main__":
         validset= injector.transform_file(validset_input, validset, overwrite=hp.overwrite,prompt_type=hp.prompt)
         testset= injector.transform_file(testset_input, testset, overwrite=hp.overwrite,prompt_type=hp.prompt)
     
-    load train/dev/test sets
-    print(hp.kbert)
-    raise NotImplementedError
+    #load train/dev/test sets
     train_dataset = DittoDataset(trainset,
                                    lm=hp.lm,
                                    max_len=hp.max_len,
@@ -203,13 +201,6 @@ if __name__=="__main__":
         predictions, logits = classify(rows, model, lm=hp.lm,
                                         max_len=hp.max_len,
                                         threshold=0.5)
-        # try:
-        #     predictions, logits = classify(pairs, model, lm=lm,
-        #                                    max_len=max_len,
-        #                                    threshold=threshold)
-        # except:
-        #     # ignore the whole batch
-        #     return
         scores = softmax(logits, axis=1)
         for pair, pred, score in zip(pairs, predictions, scores):
             output = {'left': pair[0], 'right': pair[1],
@@ -222,10 +213,6 @@ if __name__=="__main__":
     with jsonlines.open(f"./output/{hp.task}/result.jsonl", mode='w') as writer:
         pairs = test_dataset.pairs # (e1, e2)
         rows = test_dataset.rows # (e1, e2, \t, label)
-        for row in rows:
-            print(f'row content: {row}')
-        # pairs.append(to_str(row[0], row[1], summarizer, max_len, dk_injector))
-        # rows.append(row)
         if len(pairs) == hp.batch_size:
             process_batch(rows, pairs, writer)
             pairs.clear()
