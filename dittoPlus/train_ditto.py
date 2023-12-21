@@ -199,11 +199,14 @@ if __name__=="__main__":
           test_dataset,
           run_tag, hp)
     
-    enc = model.enc_history
+    enc = model.enc_history[-1]
+    print('==================')
+    print(enc.size())
     
     # predict the model
     # batch processing
-    def process_batch(rows, pairs, writer, logs):
+    def process_batch(rows, pairs, vectors, writer, logs):
+        assert len(rows) == len(vectors)
         predictions, logits = classify(rows, model, lm=hp.lm,
                                         max_len=hp.max_len,
                                         threshold=0.5)
@@ -216,7 +219,9 @@ if __name__=="__main__":
                 'match_confidence': score[int(pred)]}
             row = {
                 'row_index': idx,
-                'left': pair[0], 'right': pair[1], 'ground_truth':label,
+                'left': pair[0], 'right': pair[1], 
+                'vectors': vectors[idx],
+                'ground_truth':label,
                 'pred_result': pred,
                 'match_confidence': score[int(pred)]}
             logs.append(row)
@@ -228,12 +233,12 @@ if __name__=="__main__":
         pairs = test_dataset.pairs # (e1, e2)
         rows = test_dataset.rows # (e1, e2, \t, label)
         if len(pairs) == hp.batch_size:
-            process_batch(rows, pairs, writer, logging_info['rows'])
+            process_batch(rows, pairs, enc, writer, logging_info['rows'])
             pairs.clear()
             rows.clear()
 
         if len(pairs) > 0:
-            process_batch(rows, pairs, writer, logging_info['rows'])
+            process_batch(rows, pairs, enc, writer, logging_info['rows'])
 
     run_time = time.time() - start_time
     run_tag = '%s_lm=%s_dk=%s_su=%s' % (config['name'], hp.lm, str(hp.dk != None), str(hp.summarize != None))

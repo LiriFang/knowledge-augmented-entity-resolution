@@ -24,6 +24,7 @@ class DittoModel(nn.Module):
 
     def __init__(self, device='cuda', lm='roberta', alpha_aug=0.8):
         super().__init__()
+        self.enc_history = []
         if lm in lm_mp:
             # self.bert = RobertaModel.from_pretrained(lm_mp[lm])
             # self.bert = AutoModel.from_pretrained(lm_mp[lm])
@@ -49,6 +50,12 @@ class DittoModel(nn.Module):
         Returns:
             Tensor: binary prediction
         """
+        import inspect
+        frame = inspect.currentframe()
+        while frame:
+            print(frame.f_code.co_filename, frame.f_lineno)
+            frame = frame.f_back
+
         x1 = x1.to(self.device) # (batch_size, seq_len)
         if x2 is not None:
             # MixDA
@@ -68,6 +75,7 @@ class DittoModel(nn.Module):
                 vm, position_ids = vm.to(self.device), position_ids.to(self.device)
             enc = self.bert(x1, attention_mask=vm, position_ids=position_ids)[0][:, 0, :]
         print(f'enc is {enc}')
+        self.enc_history.append(enc)
         return self.fc(enc) # .squeeze() # .sigmoid()
 
 
