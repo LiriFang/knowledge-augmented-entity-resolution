@@ -153,9 +153,13 @@ if __name__=="__main__":
         'kbert': hp.kbert
 
     },
-    'rows':[]
+    'rows':[
+    ],
+    # 'ground_truth':,
+    # 'pred_result':,
+    # 'matching_conf':,
     }
-    
+    # row: {'left': ..., 'right':..., 'ground_truth':0, 'pred_result':0, 'matching_conf':...}
     if os.path.exists(trainset):
         print(f"The file '{trainset}' exists already.")
     else:
@@ -195,17 +199,27 @@ if __name__=="__main__":
           test_dataset,
           run_tag, hp)
     
+    enc = model.enc_history
+    
     # predict the model
     # batch processing
-    def process_batch(rows, pairs, writer):
+    def process_batch(rows, pairs, writer, logs):
         predictions, logits = classify(rows, model, lm=hp.lm,
                                         max_len=hp.max_len,
                                         threshold=0.5)
         scores = softmax(logits, axis=1)
-        for pair, pred, score in zip(pairs, predictions, scores):
+        for idx, (pair, pred, score) in enumerate(zip(pairs, predictions, scores)):
+            row_v = rows[idx]
+            s1, s2, label = row_v.strip().split('\t')
             output = {'left': pair[0], 'right': pair[1],
                 'match': pred,
                 'match_confidence': score[int(pred)]}
+            row = {
+                'row_index': idx,
+                'left': pair[0], 'right': pair[1], 'ground_truth':label,
+                'pred_result': pred,
+                'match_confidence': score[int(pred)]}
+            logs.append(row)
             writer.write(output)
     
     start_time = time.time()
@@ -214,13 +228,14 @@ if __name__=="__main__":
         pairs = test_dataset.pairs # (e1, e2)
         rows = test_dataset.rows # (e1, e2, \t, label)
         if len(pairs) == hp.batch_size:
-            process_batch(rows, pairs, writer)
+            process_batch(rows, pairs, writer, logging_info['rows'])
             pairs.clear()
             rows.clear()
 
         if len(pairs) > 0:
-            process_batch(rows, pairs, writer)
+            process_batch(rows, pairs, writer, logging_info['rows'])
 
     run_time = time.time() - start_time
     run_tag = '%s_lm=%s_dk=%s_su=%s' % (config['name'], hp.lm, str(hp.dk != None), str(hp.summarize != None))
     os.system('echo %s %f >> log.txt' % (run_tag, run_time))
+    print(logging_info)
