@@ -24,7 +24,7 @@ class DittoModel(nn.Module):
 
     def __init__(self, device='cuda', lm='roberta', alpha_aug=0.8):
         super().__init__()
-        self.enc_history = []
+        # self.enc_history = []
         if lm in lm_mp:
             # self.bert = RobertaModel.from_pretrained(lm_mp[lm])
             # self.bert = AutoModel.from_pretrained(lm_mp[lm])
@@ -40,7 +40,7 @@ class DittoModel(nn.Module):
         self.fc = torch.nn.Linear(hidden_size, 2)
 
 
-    def forward(self, x1, x2=None, vm=None, position_ids=None):
+    def forward(self, x1, x2=None, vm=None, position_ids=None, save=False):
         """Encode the left, right, and the concatenation of left+right.
 
         Args:
@@ -57,6 +57,8 @@ class DittoModel(nn.Module):
             frame = frame.f_back
 
         x1 = x1.to(self.device) # (batch_size, seq_len)
+        print('what is x1 dimension')
+        print(x1.size())
         if x2 is not None:
             # MixDA
             x2 = x2.to(self.device) # (batch_size, seq_len)
@@ -74,8 +76,9 @@ class DittoModel(nn.Module):
             if vm is not None and position_ids is not None:
                 vm, position_ids = vm.to(self.device), position_ids.to(self.device)
             enc = self.bert(x1, attention_mask=vm, position_ids=position_ids)[0][:, 0, :]
-        print(f'enc is {enc}')
-        self.enc_history.append(enc)
+        print(f'enc dimension is {enc.size()}')
+        if save is True:
+            self.enc = enc.detach().cpu().numpy()
         return self.fc(enc) # .squeeze() # .sigmoid()
 
 
@@ -260,6 +263,7 @@ def train(trainset, validset, testset, run_tag, hp):
                         'epoch': epoch}
                 torch.save(ckpt, ckpt_path)
 
+
         print(f"epoch {epoch}: dev_f1={dev_f1}, f1={test_f1}, best_f1={best_test_f1}")
 
         # logging
@@ -268,4 +272,7 @@ def train(trainset, validset, testset, run_tag, hp):
         writer.add_scalars(run_tag, scalars, epoch)
 
     writer.close()
-    return model 
+    if hp.save_model is True:
+        return ckpt.model
+    else:
+        return model

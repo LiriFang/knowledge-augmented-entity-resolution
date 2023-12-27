@@ -152,9 +152,11 @@ class DittoDataset(data.Dataset):
         tail_left_id, tail_right_id = -1, -1
         # print('sent_batch', sent_batch) 
         for i,token in enumerate(sent_batch): 
+            print(f'sentence is {sent_batch}')
             # token_skip_idx = []
             # skip = False
             if token=='<head>':
+                print(f'token is {token}')
                 # skip_idx.append(i)
                 # token_skip_idx.append(i)
                 # skip = True
@@ -175,8 +177,11 @@ class DittoDataset(data.Dataset):
                 # token_skip_idx.append(i)
                 # skip = True
             elif head_left_id < i < head_right_id:
+                print(f'The index of entity is: {i}')
                 tail_value = sent_batch[tail_left_id:tail_right_id]
+                print(tail_value)
                 entities = tail_value
+                print(entities)
             elif tail_left_id <= i <= tail_right_id:
                 continue
             else: entities = []
@@ -184,6 +189,7 @@ class DittoDataset(data.Dataset):
             # if not skip:
             if  token not in ['<head>','</head>','<tail>','</tail>']: # and not (tail_left_id <= i <= tail_right_id):
                 sent_tree.append((token, entities))
+                print(f'current sentence tree is {sent_tree}')
                 token_pos_idx = [pos_idx+1] #[pos_idx+i for i in range(1, len(token)+1)]
                 token_abs_idx = [abs_idx+1] #[abs_idx+i for i in range(1, len(token)+1)]
                 abs_idx = token_abs_idx[-1]
@@ -192,18 +198,28 @@ class DittoDataset(data.Dataset):
             entities_abs_idx = []
             # for ent in entities:
             # if len(entities) >0:
+            print(f'entities is {entities}')
             for ent in entities:
                 if ent not in ['<tail>','</tail>']:
+                    print(f'ent is {ent}')
                     ent_pos_idx = [token_pos_idx[-1]+1]#[token_pos_idx[-1] + p for p in range(1, len(entities)+1)]#ent
+                    print(f'position id for ent: {ent_pos_idx}')
                     entities_pos_idx.append(ent_pos_idx)
+                    print(f'abs id is {abs_idx}')
                     ent_abs_idx = [abs_idx + 1]#[abs_idx + a for a in range(1, len(entities)+1)]#ent
+                    print(f'absolute id for ent: {ent_abs_idx}')
                     abs_idx = ent_abs_idx[-1]
                     entities_abs_idx.append(ent_abs_idx)
+                    print(f'entities_abs_idx list is: {ent_abs_idx}')
             if  token not in ['<head>','</head>','<tail>','</tail>']:
                 pos_idx_tree.append((token_pos_idx, entities_pos_idx))
                 abs_idx_tree.append((token_abs_idx, entities_abs_idx))
                 pos_idx = token_pos_idx[-1]
                 abs_idx_src += token_abs_idx
+            print(f'abs_idx tree is: {abs_idx_tree}')
+            print(f'pos_idx tree is: {pos_idx_tree}')
+            print(f'lenth of absolute index tree is {len(abs_idx_tree)}, and position index tree: {len(pos_idx_tree)}')
+            print(f'current length of sentence tree: {len(sent_tree)}')
 
         # Get know_sent and pos
         know_sent = []
@@ -211,7 +227,9 @@ class DittoDataset(data.Dataset):
         seg = []
         # print('sent_tree',sent_tree)
         for i in range(len(sent_tree)):
+            print(f'idx of token is {i} in sentence tree: {sent_tree}, the tuple is: {sent_tree[i]}')
             word = sent_tree[i][0]
+            print(f'the word located here is: {word}')
             # if word in self.special_tags:
             #     know_sent += [word]
             #     seg += [0]
@@ -220,25 +238,33 @@ class DittoDataset(data.Dataset):
             # if i not in skip_idx:
             add_word = [word]#self.tokenizer.tokenize(word)
             know_sent += add_word 
+            print(f'what are the knowledge sentence: {know_sent}')
             seg += [0] * len(add_word)
             pos += pos_idx_tree[i][0]
-
+            print(f'here is the second component in tuple: {sent_tree[i][1]}')
             for j in range(len(sent_tree[i][1])):
+                print(f'what is token in second list: {j}')
                 add_word = [sent_tree[i][1][j]]
+                print(f'add word: {add_word}')
                 know_sent += add_word
                 seg += [1] #* len(add_word)
                 pos += pos_idx_tree[i][1][j]
 
         token_num = len(know_sent)
+        print(f'known sentence finally: {know_sent}')
         # assert token_num == abs_idx_tree, "length of know_sent = abs_idx_tree maximum idx"
         # Calculate visible matrix
         visible_matrix = np.zeros((token_num, token_num))
-        # print(visible_matrix.shape)
-        # print(abs_idx_tree)
+        print(visible_matrix.shape)
+        print(f'what is abs_idx_tree: {abs_idx_tree}')
         for item in abs_idx_tree:
+            print(f'item in abs_idx_tree is: {item}')
             src_ids = item[0]
+            print(f'the first id in item: {src_ids}')
             for id in src_ids:
+                print(f'id in src_ids')
                 visible_abs_idx = abs_idx_src + [idx for ent in item[1] for idx in ent]
+                print(f'visible absolute idx?: {visible_abs_idx}')
                 visible_matrix[id, visible_abs_idx] = 1
             for ent in item[1]:
                 for id in ent:

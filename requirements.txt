@@ -1,3 +1,6 @@
+# pip install -U --pre "weaviate-client==v4.4b2"
+weaviate-client==v4.4b2
+
 # Tensorflow:
 tensorflow[and-cuda]
 

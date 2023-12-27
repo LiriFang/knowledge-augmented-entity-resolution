@@ -28,7 +28,7 @@ from ditto_light.knowledge import *
 from ditto_light.ditto import train
 
 
-def classify(sentence_pairs, model,
+def classify(sentence_pairs, model, save,
              lm='distilbert',
              max_len=256,
              threshold=None):
@@ -43,6 +43,7 @@ def classify(sentence_pairs, model,
     Returns:
         list of float: the scores of the pairs
     """
+    enc = []
     inputs = sentence_pairs
     # print('max_len =', max_len)
    
@@ -65,17 +66,25 @@ def classify(sentence_pairs, model,
     with torch.no_grad():
         # print('Classification')
         for i, batch in enumerate(iterator):
-            x, _ = batch
-            logits = model(x)
+            if len(batch) == 2:
+                x, y = batch
+                logits = model(x, save=save)
+            elif len(batch) == 4:
+                x, position_batch, visible_matrix_batch, y = batch
+                # visible_matrix_batch, position_batch = visible_matrix_batch.to(model.device), position_batch.to(model.device)
+                logits = model(x, vm=visible_matrix_batch, position_ids=position_batch, save=save)
+                del position_batch, visible_matrix_batch
+            enc.append(model.enc)
             probs = logits.softmax(dim=1)[:, 1]
             all_probs += probs.cpu().numpy().tolist()
             all_logits += logits.cpu().numpy().tolist()
-
+        enc = np.concatenate(enc)
     if threshold is None:
         threshold = 0.5
 
     pred = [1 if p > threshold else 0 for p in all_probs]
-    return pred, all_logits
+    print(f'dimension of enc: {enc.size}')
+    return pred, all_logits, enc
 
 
 if __name__=="__main__":
@@ -198,18 +207,15 @@ if __name__=="__main__":
           valid_dataset,
           test_dataset,
           run_tag, hp)
-    
-    enc = model.enc_history[-1]
-    print('==================')
-    print(enc.size())
-    
+
     # predict the model
     # batch processing
-    def process_batch(rows, pairs, vectors, writer, logs):
-        assert len(rows) == len(vectors)
-        predictions, logits = classify(rows, model, lm=hp.lm,
+    def process_batch(rows, pairs, save , writer, logs):
+        predictions, logits, vectors = classify(rows, model, save=save, lm=hp.lm,
                                         max_len=hp.max_len,
                                         threshold=0.5)
+        print(len(vectors))
+        assert len(rows) == len(vectors)
         scores = softmax(logits, axis=1)
         for idx, (pair, pred, score) in enumerate(zip(pairs, predictions, scores)):
             row_v = rows[idx]
@@ -229,18 +235,20 @@ if __name__=="__main__":
     
     start_time = time.time()
     os.makedirs(f'./output/{hp.task}', exist_ok=True)
+    save = True
     with jsonlines.open(f"./output/{hp.task}/result.jsonl", mode='w') as writer:
         pairs = test_dataset.pairs # (e1, e2)
         rows = test_dataset.rows # (e1, e2, \t, label)
         if len(pairs) == hp.batch_size:
-            process_batch(rows, pairs, enc, writer, logging_info['rows'])
+            process_batch(rows, pairs, save, writer, logging_info['rows'])
             pairs.clear()
             rows.clear()
 
         if len(pairs) > 0:
-            process_batch(rows, pairs, enc, writer, logging_info['rows'])
+            process_batch(rows, pairs, save, writer, logging_info['rows'])
 
     run_time = time.time() - start_time
     run_tag = '%s_lm=%s_dk=%s_su=%s' % (config['name'], hp.lm, str(hp.dk != None), str(hp.summarize != None))
     os.system('echo %s %f >> log.txt' % (run_tag, run_time))
     print(logging_info)
+    
