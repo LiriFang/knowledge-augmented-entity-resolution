@@ -78,7 +78,9 @@ class DittoModel(nn.Module):
             enc = self.bert(x1, attention_mask=vm, position_ids=position_ids)[0][:, 0, :]
         print(f'enc dimension is {enc.size()}')
         if save is True:
+            # raise NotImplementedError
             self.enc = enc.detach().cpu().numpy()
+            # print(self.enc)
         return self.fc(enc) # .squeeze() # .sigmoid()
 
 

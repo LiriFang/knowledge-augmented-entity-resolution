@@ -43,7 +43,6 @@ def classify(sentence_pairs, model, save,
     Returns:
         list of float: the scores of the pairs
     """
-    enc = []
     inputs = sentence_pairs
     # print('max_len =', max_len)
    
@@ -59,7 +58,8 @@ def classify(sentence_pairs, model, save,
                                collate_fn=padder
                                )
                             #    collate_fn=DittoDataset.pad)
-
+    
+    enc = []
     # prediction
     all_probs = []
     all_logits = []
@@ -83,7 +83,6 @@ def classify(sentence_pairs, model, save,
         threshold = 0.5
 
     pred = [1 if p > threshold else 0 for p in all_probs]
-    print(f'dimension of enc: {enc.size}')
     return pred, all_logits, enc
 
 
@@ -214,7 +213,6 @@ if __name__=="__main__":
         predictions, logits, vectors = classify(rows, model, save=save, lm=hp.lm,
                                         max_len=hp.max_len,
                                         threshold=0.5)
-        print(len(vectors))
         assert len(rows) == len(vectors)
         scores = softmax(logits, axis=1)
         for idx, (pair, pred, score) in enumerate(zip(pairs, predictions, scores)):
@@ -226,7 +224,7 @@ if __name__=="__main__":
             row = {
                 'row_index': idx,
                 'left': pair[0], 'right': pair[1], 
-                'vectors': vectors[idx],
+                'vectors': vectors[idx].tolist(),
                 'ground_truth':label,
                 'pred_result': pred,
                 'match_confidence': score[int(pred)]}
@@ -250,5 +248,19 @@ if __name__=="__main__":
     run_time = time.time() - start_time
     run_tag = '%s_lm=%s_dk=%s_su=%s' % (config['name'], hp.lm, str(hp.dk != None), str(hp.summarize != None))
     os.system('echo %s %f >> log.txt' % (run_tag, run_time))
-    print(logging_info)
+    
+    if hp.prompt == 0:
+        p_name = 'kbert'
+    elif hp.prompt == 1:
+        p_name = 'space'
+    elif hp.prompt == 2:
+        p_name = 'slash'
+    
+    
+    json_object = json.dumps(logging_info, indent=4)
+    os.makedirs(f'./output/{hp.task}/{hp.dk}/prompt={p_name}', exist_ok=True)
+    with open(f"./output/{hp.task}/{hp.dk}/prompt={p_name}/result.json", mode='w') as f:
+        f.write(json_object)
+    # with jsonlines.open(f"./output/{hp.task}/{hp.dk}/prompt={p_name}/result.jsonl", mode='w') as tkaer:
+    #     tkaer.write(logging_info)
     
