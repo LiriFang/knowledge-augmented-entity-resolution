@@ -148,6 +148,10 @@ if __name__=="__main__":
         trainset = trainset_input + f'.prompt_type{hp.prompt}.sherlock.dk'
         testset = testset_input + f'.prompt_type{hp.prompt}.sherlock.dk'
         validset = validset_input + f'.prompt_type{hp.prompt}.sherlock.dk'
+    elif hp.dk == None:
+        trainset = trainset_input
+        validset = validset_input
+        testset = testset_input
     # TODO: what's the extension for EL- file?
 
     
