@@ -53,12 +53,12 @@ class DittoModel(nn.Module):
         import inspect
         frame = inspect.currentframe()
         while frame:
-            print(frame.f_code.co_filename, frame.f_lineno)
+            # print(frame.f_code.co_filename, frame.f_lineno)
             frame = frame.f_back
 
         x1 = x1.to(self.device) # (batch_size, seq_len)
-        print('what is x1 dimension')
-        print(x1.size())
+        # print('what is x1 dimension')
+        # print(x1.size())
         if x2 is not None:
             # MixDA
             x2 = x2.to(self.device) # (batch_size, seq_len)
@@ -76,7 +76,7 @@ class DittoModel(nn.Module):
             if vm is not None and position_ids is not None:
                 vm, position_ids = vm.to(self.device), position_ids.to(self.device)
             enc = self.bert(x1, attention_mask=vm, position_ids=position_ids)[0][:, 0, :]
-        print(f'enc dimension is {enc.size()}')
+        # print(f'enc dimension is {enc.size()}')
         if save is True:
             # raise NotImplementedError
             self.enc = enc.detach().cpu().numpy()

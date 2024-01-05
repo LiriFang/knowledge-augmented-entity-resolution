@@ -223,13 +223,11 @@ class DittoDataset(data.Dataset):
             pos += pos_idx_tree[i][0]
             for j in range(len(sent_tree[i][1])):
                 add_word = [sent_tree[i][1][j]]
-                print(f'add word: {add_word}')
                 know_sent += add_word
                 seg += [1] #* len(add_word)
                 pos += pos_idx_tree[i][1][j]
 
         token_num = len(know_sent)
-        print(f'known sentence finally: {know_sent}')
         # assert token_num == abs_idx_tree, "length of know_sent = abs_idx_tree maximum idx"
         # Calculate visible matrix
         visible_matrix = np.zeros((token_num, token_num))
