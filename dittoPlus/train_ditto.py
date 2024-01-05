@@ -9,6 +9,7 @@ import torch
 import numpy as np
 import random
 import jsonlines
+import sklearn.metrics as metrics
 
 from scipy.special import softmax
 from torch.utils import data
@@ -30,7 +31,7 @@ from ditto_light.ditto import train
 
 def classify(sentence_pairs, model, save,
              lm='distilbert',
-             max_len=256,
+             max_len=512,
              threshold=None):
     """Apply the MRPC model.
 
@@ -63,6 +64,7 @@ def classify(sentence_pairs, model, save,
     # prediction
     all_probs = []
     all_logits = []
+
     with torch.no_grad():
         # print('Classification')
         for i, batch in enumerate(iterator):
@@ -79,10 +81,12 @@ def classify(sentence_pairs, model, save,
             all_probs += probs.cpu().numpy().tolist()
             all_logits += logits.cpu().numpy().tolist()
         enc = np.concatenate(enc)
+    
     if threshold is None:
         threshold = 0.5
 
     pred = [1 if p > threshold else 0 for p in all_probs]
+
     return pred, all_logits, enc
 
 
@@ -90,7 +94,7 @@ if __name__=="__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--task", type=str, default="Structured/iTunes-Amazon")
     parser.add_argument("--run_id", type=int, default=0)
-    parser.add_argument("--batch_size", type=int, default=64)
+    parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--max_len", type=int, default=512)
     parser.add_argument("--lr", type=float, default=3e-5)
     parser.add_argument("--n_epochs", type=int, default=20)
@@ -152,6 +156,14 @@ if __name__=="__main__":
         trainset = trainset_input
         validset = validset_input
         testset = testset_input
+    elif hp.dk == 'doduo':
+        trainset = trainset_input + f'.doduo'
+        testset = testset_input + f'.doduo'
+        validset = validset_input + f'.doduo'
+    elif hp.dk == 'entityLinking':
+        trainset = trainset_input + f'.refined'
+        testset = testset_input + f'.refined'
+        validset = validset_input + f'.refined'
     # TODO: what's the extension for EL- file?
 
     
@@ -210,6 +222,7 @@ if __name__=="__main__":
           valid_dataset,
           test_dataset,
           run_tag, hp)
+    
 
     # predict the model
     # batch processing
