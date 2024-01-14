@@ -1,22 +1,61 @@
 import json
 import pandas as pd
 import os
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
 
 def read_res(file_path):
     with open(file_path, 'r')as f:
         data = json.load(f)
     return data 
 
-def check_distance(detailed_df, idx_same=4, idx_diff=2):
+
+def cosine_similarity(list1, list2):
+    dot_product = np.dot(list1, list2)
+    norm_list1 = np.linalg.norm(list1)
+    norm_list2 = np.linalg.norm(list2)
+    
+    similarity = dot_product / (norm_list1 * norm_list2)
+    
+    return similarity
+
+
+def doc_distance(res_sherlock, res_doduo, details_df, idx_same=4, idx_diff=2):
     # the distance between vectors should represent the similarity between the data entries
     # predicted_wt_sherlock: T, predicted_wt_doduo: T
     # predicted_wt_sherlock: F, predicted_wt_doduo: T
     # cos_(v1, v2)
-    print(detailed_df)
-    predict_same_rows = detailed_df.iloc[idx_same]['Rows Indices']
-    predict_diff_rows = detailed_df.iloc[idx_diff]['Rows Indices']
-    print(predict_same_rows)
-    print(predict_diff_rows)
+    # 'row_index', 'entry_sherlock', 'entry_doduo', 'predict_sherlock','predict_doduo', 'distance', 'ground_truth'
+    delta_res = []
+    rows_sherlock = res_sherlock['rows']
+    rows_doduo = res_sherlock['rows']
+    predict_same_rows = details_df.iloc[idx_same]['Rows Indices']
+    predict_diff_rows = details_df.iloc[idx_diff]['Rows Indices']
+    # values_sherlock = []
+    # values_doduo = []
+    distances = {}
+    exp_rows = predict_same_rows + predict_diff_rows
+    print(exp_rows)
+    for row_idx in exp_rows:
+        row_sherlock = rows_sherlock[row_idx]
+        entry_sherlock = row_sherlock['left'] + ' ' + row_sherlock['right']
+        predict_sherlock = row_sherlock['pred_result']
+        vec_sherlock = row_sherlock['vectors']
+        gd_sherlock = row_sherlock['ground_truth']
+
+        row_doduo = rows_doduo[row_idx]
+        entry_doduo = row_doduo['left'] + ' ' + row_doduo['right']
+        predict_doduo = row_doduo['pred_result']
+        vec_doduo = row_doduo['vectors']
+        gd_doduo = row_doduo['ground_truth']
+
+        assert gd_sherlock==gd_doduo
+
+        vec_sim = cosine_similarity(vec_sherlock, vec_doduo)
+        print(f'at row {row_idx}: the cosine similarity is {vec_sim}')
+        delta_row = [row_idx, entry_sherlock, entry_doduo, predict_sherlock, predict_doduo, vec_sim, gd_sherlock]
+        delta_res.append(delta_row)
+    return delta_res
 
 
 def write_ev_table(data_no_ka, data_sherlock, data_doduo, data_el=None):
@@ -118,33 +157,40 @@ def write_ev_table(data_no_ka, data_sherlock, data_doduo, data_el=None):
 
 
 def main():
-    column_names = ['Predicted result[Without KA]', 'Predicted Result[With Sherlock]', 'Predicted Result[With Doduo]', 'Rows Count', 'Error Ratio']
-    col_names_bp = ['Description', 'Rows Indices']
-    ev_df = pd.DataFrame(columns=column_names)
-    details_df = pd.DataFrame(columns=col_names_bp)
     data_no_ka = read_res('./output/Structured/DBLP-ACM/None/prompt=space/result.json')
     data_doduo = read_res('./output/Structured/DBLP-ACM/doduo/prompt=space/result.json')
     data_sherlock = read_res('./output/Structured/DBLP-ACM/sherlock/prompt=space/result.json')
 
-    rows_list, details_list = write_ev_table(data_no_ka, data_sherlock, data_doduo)
-    for rows in rows_list:
-        ev_df = ev_df.append(pd.Series(rows, index=column_names), ignore_index=True)
-    
-    for details in details_list:
-        details_df = details_df.append(pd.Series(details, index=col_names_bp), ignore_index=True)
-    
     analysis_fp = 'output_analysis.csv'
     details_fp = 'output_details.csv'
-    if os.path.exists(analysis_fp):
-        print(f'The file path {analysis_fp} exists.')
+    if os.path.exists(analysis_fp) and os.path.exists(details_fp):
+        print(f'The file path {analysis_fp} and {details_fp} exist.')
+        ev_df = pd.read_csv(analysis_fp)
+        # dtype_mapping = {'Description': 'str', 'Rows Indices':'list'}
+        details_df = pd.read_csv(details_fp)
     else:
-
+        column_names = ['Predicted result[Without KA]', 'Predicted Result[With Sherlock]', 'Predicted Result[With Doduo]', 'Rows Count', 'Error Ratio']
+        col_names_bp = ['Description', 'Rows Indices']
+        ev_df = pd.DataFrame(columns=column_names)
+        details_df = pd.DataFrame(columns=col_names_bp)
+        rows_list, details_list = write_ev_table(data_no_ka, data_sherlock, data_doduo)
+        for rows in rows_list:  
+            ev_df = ev_df.append(pd.Series(rows, index=column_names), ignore_index=True)
+        
+        for details in details_list:
+            details_df = details_df.append(pd.Series(details, index=col_names_bp), ignore_index=True)
         ev_df.to_csv(analysis_fp, index=False)
         details_df.to_csv(details_fp, index=False)
         # print(f'The file path {analysis_fp} does not exist.')
     
-    print('done')
-    check_distance(details_df)
+    details_df['Rows Indices'] = details_df['Rows Indices'].apply(json.loads)
+    # x->x'; y->y'
+    # delta_df document the distances between data entry vectors 
+    rows_delta = doc_distance(data_sherlock, data_doduo, details_df)
+    # delta_cols = ['row_index', 'entry_sherlock', 'entry_doduo', 'predict_sherlock','predict_doduo', 'similarity', 'ground_truth']
+    # delta_df = pd.DataFrame(columns=column_names)
+    # for row_delta in rows_delta:
+    #     delta_df = delta_df.append(pd.Series(row_delta, index=delta_cols), ignore_index=True)
 
 
 
