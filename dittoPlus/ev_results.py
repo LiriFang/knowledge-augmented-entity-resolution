@@ -28,7 +28,7 @@ def doc_distance(res_sherlock, res_doduo, details_df, idx_same=4, idx_diff=2):
     # 'row_index', 'entry_sherlock', 'entry_doduo', 'predict_sherlock','predict_doduo', 'distance', 'ground_truth'
     delta_res = []
     rows_sherlock = res_sherlock['rows']
-    rows_doduo = res_sherlock['rows']
+    rows_doduo = res_doduo['rows']
     predict_same_rows = details_df.iloc[idx_same]['Rows Indices']
     predict_diff_rows = details_df.iloc[idx_diff]['Rows Indices']
     # values_sherlock = []
@@ -52,7 +52,7 @@ def doc_distance(res_sherlock, res_doduo, details_df, idx_same=4, idx_diff=2):
         assert gd_sherlock==gd_doduo
 
         vec_sim = cosine_similarity(vec_sherlock, vec_doduo)
-        print(f'at row {row_idx}: the cosine similarity is {vec_sim}')
+        print(f'at row {row_idx}: predicted result by sherlock is {predict_sherlock}, by doduo is {predict_doduo}, cos sim: {vec_sim}')
         delta_row = [row_idx, entry_sherlock, entry_doduo, predict_sherlock, predict_doduo, vec_sim, gd_sherlock]
         delta_res.append(delta_row)
     return delta_res
@@ -161,13 +161,14 @@ def main():
     data_doduo = read_res('./output/Structured/DBLP-ACM/doduo/prompt=space/result.json')
     data_sherlock = read_res('./output/Structured/DBLP-ACM/sherlock/prompt=space/result.json')
 
-    analysis_fp = 'output_analysis.csv'
-    details_fp = 'output_details.csv'
+    analysis_fp = 'q_experiment.csv'
+    details_fp = 'q_rows.csv'
     if os.path.exists(analysis_fp) and os.path.exists(details_fp):
         print(f'The file path {analysis_fp} and {details_fp} exist.')
         ev_df = pd.read_csv(analysis_fp)
         # dtype_mapping = {'Description': 'str', 'Rows Indices':'list'}
         details_df = pd.read_csv(details_fp)
+        details_df['Rows Indices'] = details_df['Rows Indices'].apply(json.loads)
     else:
         column_names = ['Predicted result[Without KA]', 'Predicted Result[With Sherlock]', 'Predicted Result[With Doduo]', 'Rows Count', 'Error Ratio']
         col_names_bp = ['Description', 'Rows Indices']
@@ -183,14 +184,15 @@ def main():
         details_df.to_csv(details_fp, index=False)
         # print(f'The file path {analysis_fp} does not exist.')
     
-    details_df['Rows Indices'] = details_df['Rows Indices'].apply(json.loads)
     # x->x'; y->y'
     # delta_df document the distances between data entry vectors 
     rows_delta = doc_distance(data_sherlock, data_doduo, details_df)
-    # delta_cols = ['row_index', 'entry_sherlock', 'entry_doduo', 'predict_sherlock','predict_doduo', 'similarity', 'ground_truth']
-    # delta_df = pd.DataFrame(columns=column_names)
-    # for row_delta in rows_delta:
-    #     delta_df = delta_df.append(pd.Series(row_delta, index=delta_cols), ignore_index=True)
+    delta_cols = ['row_index', 'entry_sherlock', 'entry_doduo', 'predict_sherlock','predict_doduo', 'similarity', 'ground_truth']
+    delta_df = pd.DataFrame(columns=delta_cols)
+    for row_delta in rows_delta:
+        delta_df = delta_df.append(pd.Series(row_delta, index=delta_cols), ignore_index=True)
+    delta_fp = 'q3_delta.csv'
+    delta_df.to_csv(delta_fp, index=False)   
 
 
 
