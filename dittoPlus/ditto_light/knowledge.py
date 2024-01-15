@@ -136,7 +136,7 @@ class EntityLinkingDKInjector(DKInjector):
         print("Loading RefinED model...")
         self.refined = Refined.from_pretrained(model_name='wikipedia_model', 
                             entity_set="wikipedia",
-                            data_dir="/projects/bces/yirenl2/ReFinED/src/data", 
+                            data_dir="/projects/bces/lanl2/ReFinED/src/data", 
                             download_files=True,
                             use_precomputed_descriptions=True,
                             device="cuda:0",
@@ -157,7 +157,8 @@ class EntityLinkingDKInjector(DKInjector):
         Returns:
             str: the output file name
         """
-        out_fn = input_fn + '.refined.dk'
+        out_fn = input_fn
+        # out_fn = input_fn + '.refined.dk'
         if not os.path.exists(out_fn) or \
             os.stat(out_fn).st_size == 0 or overwrite:
 
@@ -173,7 +174,7 @@ class EntityLinkingDKInjector(DKInjector):
     def transform(self, entry, use_kbert=True):
         """Transform a data entry.
 
-        Use NER to regconize the product-related named entities and
+        Use NER to recognize the product-related named entities and
         mark them in the sequence. Normalize the numbers into the same format.
 
         Args:
