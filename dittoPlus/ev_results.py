@@ -20,7 +20,7 @@ def cosine_similarity(list1, list2):
     return similarity
 
 
-def doc_distance(res_sherlock, res_doduo, details_df, idx_same=4, idx_diff=2):
+def doc_distance(res_sherlock, res_doduo, details_df, idx_same=4, idx_diff=[1,2,5,6]):
     # the distance between vectors should represent the similarity between the data entries
     # predicted_wt_sherlock: T, predicted_wt_doduo: T
     # predicted_wt_sherlock: F, predicted_wt_doduo: T
@@ -29,13 +29,14 @@ def doc_distance(res_sherlock, res_doduo, details_df, idx_same=4, idx_diff=2):
     delta_res = []
     rows_sherlock = res_sherlock['rows']
     rows_doduo = res_doduo['rows']
+    predict_diff_rows = []
     predict_same_rows = details_df.iloc[idx_same]['Rows Indices']
-    predict_diff_rows = details_df.iloc[idx_diff]['Rows Indices']
+    for idx in idx_diff:
+        predict_diff_rows.extend(details_df.iloc[idx]['Rows Indices'])
     # values_sherlock = []
     # values_doduo = []
     distances = {}
     exp_rows = predict_same_rows + predict_diff_rows
-    print(exp_rows)
     for row_idx in exp_rows:
         row_sherlock = rows_sherlock[row_idx]
         entry_sherlock = row_sherlock['left'] + ' ' + row_sherlock['right']
@@ -52,7 +53,7 @@ def doc_distance(res_sherlock, res_doduo, details_df, idx_same=4, idx_diff=2):
         assert gd_sherlock==gd_doduo
 
         vec_sim = cosine_similarity(vec_sherlock, vec_doduo)
-        print(f'at row {row_idx}: predicted result by sherlock is {predict_sherlock}, by doduo is {predict_doduo}, cos sim: {vec_sim}')
+        print(f'at row {row_idx}: predicted result by sherlock is {predict_sherlock}, by doduo is {predict_doduo}, cos sim: {vec_sim}, ground truth: {gd_sherlock}')
         delta_row = [row_idx, entry_sherlock, entry_doduo, predict_sherlock, predict_doduo, vec_sim, gd_sherlock]
         delta_res.append(delta_row)
     return delta_res
