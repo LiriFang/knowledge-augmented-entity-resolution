@@ -62,5 +62,21 @@
         "trainset": "../data/er_magellan/Structured/DBLP-ACM/train.txt.doduo",
         "validset": "../data/er_magellan/Structured/DBLP-ACM/valid.txt.doduo",
         "testset": "../data/er_magellan/Structured/DBLP-ACM/test.txt.doduo"
-        }
+      },
+      {
+        "name": "Structured/DBLP-ACM-doduo",
+        "task_type": "classification",
+        "vocab": ["0", "1"],
+        "trainset": "../data/er_magellan/Structured/DBLP-ACM/train.txt.doduo",
+        "validset": "../data/er_magellan/Structured/DBLP-ACM/valid.txt.doduo",
+        "testset": "../data/er_magellan/Structured/DBLP-ACM/test.txt.doduo"
+      },
+      {
+        "name": "Structured/DBLP-ACM-sherlock",
+        "task_type": "classification",
+        "vocab": ["0", "1"],
+        "trainset": "../data/er_magellan/Structured/DBLP-ACM/train.txt.prompt_type1.sherlock.dk",
+        "validset": "../data/er_magellan/Structured/DBLP-ACM/valid.txt.prompt_type1.sherlock.dk",
+        "testset": "../data/er_magellan/Structured/DBLP-ACM/test.txt.prompt_type1.sherlock.dk"
+      }
 ]

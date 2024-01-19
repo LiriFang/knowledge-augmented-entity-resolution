@@ -53,7 +53,8 @@ def classify(sentence_pairs, model, save,
     padder = dataset.pad
     # print(dataset[0])
     iterator = data.DataLoader(dataset=dataset,
-                               batch_size=len(dataset),
+                            #    batch_size=len(dataset),
+                               batch_size=32,
                                shuffle=False,
                                num_workers=0,
                                collate_fn=padder
@@ -188,20 +189,25 @@ if __name__=="__main__":
         print(f"The file '{trainset}' exists already.")
     else:
         print(f"The file '{trainset}' does not exist.")
+        print(f"Using DK Injector: {hp.dk}")
         if hp.dk == 'product':
             injector = ProductDKInjector(config, hp.dk)
-        if hp.dk == 'entityLinking':
+        elif hp.dk == 'entityLinking':
             injector = EntityLinkingDKInjector(config, hp.dk)
-        if hp.dk == 'sherlock':
+        elif hp.dk == 'sherlock':
             injector = SherlockDKInjector(config, hp.dk)
         else:
             injector = GeneralDKInjector(config, hp.dk)
 
+        print(f"param overwrite: {hp.overwrite}")
+        print(f"trainset_input: {trainset_input}")
+        print(f"trainset: {trainset}")
         trainset= injector.transform_file(trainset_input, trainset, overwrite=hp.overwrite,prompt_type=hp.prompt)
         validset= injector.transform_file(validset_input, validset, overwrite=hp.overwrite,prompt_type=hp.prompt)
         testset= injector.transform_file(testset_input, testset, overwrite=hp.overwrite,prompt_type=hp.prompt)
     
     #load train/dev/test sets
+    print(f"Reading training data from: {trainset}")
     train_dataset = DittoDataset(trainset,
                                    lm=hp.lm,
                                    max_len=hp.max_len,

@@ -59,7 +59,46 @@ def doc_distance(res_sherlock, res_doduo, details_df, idx_same=4, idx_diff=[1,2,
     return delta_res
 
 
-def write_ev_table(data_no_ka, data_sherlock, data_doduo, data_el=None):
+def doc_distance_exp2(res_doduo, res_doduo_el, details_df, idx_same=0, idx_diff=[1,2]):
+    # the distance between vectors should represent the similarity between the data entries
+    # predicted_doduo: T, predicted_doduo_EL: T
+    # cos_(v1, v2)
+    # 'row_index', 'entry_sherlock', 'entry_doduo', 'predict_sherlock','predict_doduo', 'distance', 'ground_truth'
+    delta_res = []
+    rows_doduo = res_doduo['rows']
+    rows_doduo_el = res_doduo_el['rows']
+    predict_diff_rows = []
+    predict_same_rows = details_df.iloc[idx_same]['Rows Indices']
+    for idx in idx_diff:
+        predict_diff_rows.extend(details_df.iloc[idx]['Rows Indices'])
+    # values_sherlock = []
+    # values_doduo = []
+    distances = {}
+    exp_rows = predict_same_rows + predict_diff_rows
+    for row_idx in exp_rows:
+        row_doduo = rows_doduo[row_idx]
+        entry_doduo = row_doduo['left'] + ' ' + row_doduo['right']
+        predict_doduo = row_doduo['pred_result']
+        vec_doduo = row_doduo['vectors']
+        gd_doduo = row_doduo['ground_truth']
+
+        row_doduo_el = rows_doduo_el[row_idx]
+        entry_doduo_el = row_doduo_el['left'] + ' ' + row_doduo_el['right']
+        predict_doduo_el = row_doduo_el['pred_result']
+        vec_doduo_el = row_doduo_el['vectors']
+        gd_doduo_el = row_doduo_el['ground_truth']
+
+        assert gd_doduo_el==gd_doduo
+
+        vec_sim = cosine_similarity(vec_doduo, vec_doduo_el)
+        # ['row_index', 'entry_doduo', 'entry_doduo_el', 'predict_doduo','predict_doduo_el', 'similarity', 'ground_truth']
+        print(f'at row {row_idx}: predicted result by doduo is {predict_doduo}, by doduo and EL is {predict_doduo_el}, cos sim: {vec_sim}, ground truth: {gd_doduo}')
+        delta_row = [row_idx, entry_doduo, entry_doduo_el, predict_doduo, predict_doduo_el, vec_sim, gd_doduo]
+        delta_res.append(delta_row)
+    return delta_res
+
+
+def write_ev_table(data_no_ka, data_sherlock, data_doduo):
     '''
     #@params data_no_ka: data without knowledge augmentation
     #@params data_sherlock: data with column semantic types predicted by sherlock
@@ -157,13 +196,87 @@ def write_ev_table(data_no_ka, data_sherlock, data_doduo, data_el=None):
     return values, rows_index_details
 
 
-def main():
-    data_no_ka = read_res('./output/Structured/DBLP-ACM/None/prompt=space/result.json')
-    data_doduo = read_res('./output/Structured/DBLP-ACM/doduo/prompt=space/result.json')
-    data_sherlock = read_res('./output/Structured/DBLP-ACM/sherlock/prompt=space/result.json')
+def write_ev_table_exp2(data_no_ka, data_doduo, data_doduo_el):
+    '''
+    #@params data_doduo: data with doduo
+    #@params data_doduo_el: data with both doduo and entity linking 
+    '''
+    rows_index_details = []
+    values = []
+    rows_no_ka = data_no_ka['rows']
+    # rows_sh = data_sherlock['rows']
+    rows_doduo = data_doduo['rows']
+    rows_doduo_el = data_doduo_el['rows']
+    assert len(rows_doduo) == len(rows_doduo_el)
 
-    analysis_fp = 'q_experiment.csv'
-    details_fp = 'q_rows.csv'
+    true_both = 0
+    true_both_rows = []
+    false_doduo = 0
+    false_doduo_rows = []
+    false_doduo_el = 0
+    false_doduo_el_rows = []
+    false_both = 0
+    false_both_rows = []
+
+    for i, row_doduo in enumerate(rows_doduo):
+        row_no_ka = rows_no_ka[i]
+        row_doduo_el = rows_doduo_el[i]
+        gd = int(row_doduo['ground_truth'])
+        pred_no_ka = int(row_no_ka['pred_result'])
+        pred_res_doduo = int(row_doduo['pred_result'])
+        pred_res_doduo_el = int(row_doduo_el['pred_result'])
+        # x, x' --> y, y'
+        if pred_res_doduo==gd and pred_res_doduo_el==gd and pred_no_ka!=gd:
+            true_both += 1
+            true_both_rows.append(i)
+        
+        if pred_res_doduo==gd and pred_res_doduo_el!=gd:
+            false_doduo_el += 1
+            false_doduo_el_rows.append(i)
+        
+        if pred_res_doduo!=gd and pred_res_doduo_el==gd:
+            false_doduo += 1
+            false_doduo_rows.append(i)
+
+        if pred_res_doduo!=gd and pred_res_doduo_el!=gd:
+            false_both += 1
+            false_both_rows.append(i)
+    
+    # ['Predicted Result[With Doduo]', 'Predicted Result[Doduo and EL]', 'Rows Count', 'Error Ratio']
+    true_both_ratio = true_both/len(rows_doduo)
+    values.append(['T', 'T', true_both, true_both_ratio])
+    rows_index_details.append(['Predicted results are all correct: Doduo Only, Doduo with EL (non-ka incorrect)', true_both_rows])
+
+    false_doduo_el_ratio = false_doduo_el/len(rows_doduo)
+    values.append(['T', 'F', false_doduo_el, false_doduo_el_ratio])
+    rows_index_details.append(['Predicted results by Doduo with EL is incorrect', false_doduo_el_rows])
+
+    false_doduo_ratio = false_doduo/len(rows_doduo)
+    values.append(['F', 'T', false_doduo, false_doduo_ratio])
+    rows_index_details.append(['Predicted results by Doduo is incorrect', false_doduo_rows])
+
+    false_both_ratio = false_both/len(rows_doduo)
+    values.append(['F', 'F', false_both, false_both_ratio])
+    rows_index_details.append(['Predicted results by both methods are incorrect', false_both_rows])
+
+    return values, rows_index_details
+
+def main():
+    # without EL 
+    data_no_ka = read_res('./output/Structured/DBLP-ACM/None/prompt=space/result.json')
+    # data_doduo = read_res('./output/Structured/DBLP-ACM/doduo/prompt=space/result.json')
+    # data_sherlock = read_res('./output/Structured/DBLP-ACM/sherlock/prompt=space/result.json')
+    
+    # with EL
+    data_doduo = read_res('./output/Structured/DBLP-ACM/doduo/prompt=space/result.json')
+    data_doduo_el = read_res('./output/Structured/DBLP-ACM-doduo/entityLinking/prompt=space/result.json')
+    
+    # without EL
+    # analysis_fp = 'q_experiment_exp2.csv'
+    # details_fp = 'q_rows_exp2.csv'
+    # with EL
+    analysis_fp = 'q_experiment_exp2.csv'
+    details_fp = 'q_rows_exp2.csv'
     if os.path.exists(analysis_fp) and os.path.exists(details_fp):
         print(f'The file path {analysis_fp} and {details_fp} exist.')
         ev_df = pd.read_csv(analysis_fp)
@@ -171,11 +284,16 @@ def main():
         details_df = pd.read_csv(details_fp)
         details_df['Rows Indices'] = details_df['Rows Indices'].apply(json.loads)
     else:
-        column_names = ['Predicted result[Without KA]', 'Predicted Result[With Sherlock]', 'Predicted Result[With Doduo]', 'Rows Count', 'Error Ratio']
+        # without EL
+        # column_names = ['Predicted result[Without KA]', 'Predicted Result[With Sherlock]', 'Predicted Result[With Doduo]', 'Rows Count', 'Error Ratio']
+        # with EL 
+        column_names = ['Predicted Result[With Doduo]', 'Predicted Result[Doduo and EL]', 'Rows Count', 'Error Ratio']
         col_names_bp = ['Description', 'Rows Indices']
         ev_df = pd.DataFrame(columns=column_names)
         details_df = pd.DataFrame(columns=col_names_bp)
-        rows_list, details_list = write_ev_table(data_no_ka, data_sherlock, data_doduo)
+        # without EL
+        # rows_list, details_list = write_ev_table(data_no_ka, data_sherlock, data_doduo)
+        rows_list, details_list = write_ev_table_exp2(data_no_ka, data_doduo, data_doduo_el)
         for rows in rows_list:  
             ev_df = ev_df.append(pd.Series(rows, index=column_names), ignore_index=True)
         
@@ -187,12 +305,18 @@ def main():
     
     # x->x'; y->y'
     # delta_df document the distances between data entry vectors 
-    rows_delta = doc_distance(data_sherlock, data_doduo, details_df)
-    delta_cols = ['row_index', 'entry_sherlock', 'entry_doduo', 'predict_sherlock','predict_doduo', 'similarity', 'ground_truth']
+    # Without EL 
+    # rows_delta = doc_distance_exp2(data_sherlock, data_doduo, details_df)
+
+    # With EL 
+    rows_delta = doc_distance_exp2(data_doduo, data_doduo_el, details_df)
+    # Without EL
+    # delta_cols = ['row_index', 'entry_sherlock', 'entry_doduo', 'predict_sherlock','predict_doduo', 'similarity', 'ground_truth']
+    delta_cols = ['row_index', 'entry_doduo', 'entry_doduo_el', 'predict_doduo','predict_doduo_el', 'similarity', 'ground_truth']
     delta_df = pd.DataFrame(columns=delta_cols)
     for row_delta in rows_delta:
         delta_df = delta_df.append(pd.Series(row_delta, index=delta_cols), ignore_index=True)
-    delta_fp = 'q3_delta.csv'
+    delta_fp = 'q3_delta_exp2.csv'
     delta_df.to_csv(delta_fp, index=False)   
 
 

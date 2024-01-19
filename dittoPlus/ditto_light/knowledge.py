@@ -47,7 +47,7 @@ class DKInjector:
     def transform(self, entry):
         return entry
 
-    def transform_file(self, input_fn, overwrite=False):
+    def transform_file(self, input_fn, out_fn, overwrite=False, prompt_type=1):
         """Transform all lines of a tsv file.
 
         Run the knowledge injector. If the output already exists, just return the file name.
@@ -132,11 +132,11 @@ class EntityLinkingDKInjector(DKInjector):
     def initialize(self):
         """Initialize EL model"""
         # load refined model here
-        from refined.processor import Refined
+        from refined.inference.processor import Refined
         print("Loading RefinED model...")
         self.refined = Refined.from_pretrained(model_name='wikipedia_model', 
                             entity_set="wikipedia",
-                            data_dir="/projects/bces/lanl2/ReFinED/src/data", 
+                            data_dir="../data/refined/wikipedia/",
                             download_files=True,
                             use_precomputed_descriptions=True,
                             device="cuda:0",
@@ -145,7 +145,7 @@ class EntityLinkingDKInjector(DKInjector):
         self.log_path = 'output/refined_outputs.txt'
         self.log_file = open(self.log_path, 'w')
 
-    def transform_file(self, input_fn, overwrite=False):
+    def transform_file(self, input_fn, out_fn, overwrite=False, prompt_type=1):
         """Transform all lines of a tsv file.
 
         Run the knowledge injector. If the output already exists, just return the file name.
@@ -157,12 +157,13 @@ class EntityLinkingDKInjector(DKInjector):
         Returns:
             str: the output file name
         """
-        out_fn = input_fn
+        # out_fn = input_fn
         # out_fn = input_fn + '.refined.dk'
         if not os.path.exists(out_fn) or \
             os.stat(out_fn).st_size == 0 or overwrite:
 
             with open(out_fn, 'w') as fout:
+                print(f"writing EL results to: {out_fn}")
                 for line in tqdm(open(input_fn)):
                     LL = line.split('\t')
                     if len(LL) == 3:
@@ -171,10 +172,10 @@ class EntityLinkingDKInjector(DKInjector):
                         fout.write(entry0 + '\t' + entry1 + '\t' + LL[2])
         return out_fn
 
-    def transform(self, entry, use_kbert=True):
+    def transform(self, entry):
         """Transform a data entry.
 
-        Use NER to recognize the product-related named entities and
+        Use NER to regconize the product-related named entities and
         mark them in the sequence. Normalize the numbers into the same format.
 
         Args:
@@ -200,35 +201,23 @@ class EntityLinkingDKInjector(DKInjector):
         # print(cols)
 
         valuesTagged = []
+        # print(values)
         for entry in values:
             if len(entry.replace(' ', '')) > 0:
                 # print(entry)
                 # print(len(entry))
+                # spans = self.refined.process_text(entry)
                 spans = self.refined.process_text(entry)
                 text = entry
+                # print(spans)
                 for i in range(len(spans)-1, -1, -1):
-                    span = spans[i]
-                    if len(span.pred_types) > 0:
-                        spanType = span.pred_types[0][1]
+                    # ent_name, span, ent_type = spans[i]
+                    span= spans[i]
+                    # print(span.predicted_entity_types)
+                    if len(span.predicted_entity_types) > 0:
+                        spanType = span.predicted_entity_types[0][1]
                         # text = text[:span.start] + '<' + spanType + '>' + entry[span.start:span.start + span.ln] + '</' + spanType + '>' + entry[span.start + span.ln:]
-                        # text = text[:span.start] \
-                        #         + text[span.start:span.start + span.ln] \
-                        #             + ' (' + spanType + ')' \
-                        #                 + text[span.start + span.ln:]
-                        
-                        # new annotation for K-BERT
-                        if use_kbert:
-                            text = text[:span.start] \
-                                    + "<head>" + text[span.start:span.start + span.ln] + "</head>" \
-                                        + "<tail>" + spanType + "</tail>" \
-                                            + text[span.start + span.ln:]
-                            # print(text)
-                            # raise NotImplementedError
-                        else:
-                            text = text[:span.start] \
-                                + text[span.start:span.start + span.ln] \
-                                    + ' (' + spanType + ')' \
-                                        + text[span.start + span.ln:]
+                        text = text[:span.start] + entry[span.start:span.start + span.ln] + ' (' + spanType + ')' + entry[span.start + span.ln:]
                     else:
                         text = entry
                 valuesTagged.append(text)
