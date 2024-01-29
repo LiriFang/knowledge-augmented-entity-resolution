@@ -34,6 +34,7 @@ class DittoDataset(data.Dataset):
         self.tokenizer.add_tokens(['<head>', '</head>','<tail>','</tail>'], special_tokens=True)
         self.pairs = []
         self.labels = []
+        self.rows = []
         self.max_len = max_len
         self.size = size
 
@@ -43,6 +44,7 @@ class DittoDataset(data.Dataset):
             lines = open(path, encoding='utf-8')
 
         for line in lines:
+            self.rows.append(line)
             s1, s2, label = line.strip().split('\t')
             self.pairs.append((s1, s2))
             self.labels.append(int(label))
@@ -166,7 +168,6 @@ class DittoDataset(data.Dataset):
                 # skip = True
                 # entities= [" ".join(tail_value)] # entities: ["author name"]
                 entities = [] 
-                # print(entities)
                 # raise NotImplementedError
             # elif token == '</head>':
                 # skip_idx.append(i)
@@ -220,7 +221,6 @@ class DittoDataset(data.Dataset):
             know_sent += add_word 
             seg += [0] * len(add_word)
             pos += pos_idx_tree[i][0]
-
             for j in range(len(sent_tree[i][1])):
                 add_word = [sent_tree[i][1][j]]
                 know_sent += add_word
@@ -231,8 +231,6 @@ class DittoDataset(data.Dataset):
         # assert token_num == abs_idx_tree, "length of know_sent = abs_idx_tree maximum idx"
         # Calculate visible matrix
         visible_matrix = np.zeros((token_num, token_num))
-        # print(visible_matrix.shape)
-        # print(abs_idx_tree)
         for item in abs_idx_tree:
             src_ids = item[0]
             for id in src_ids:
@@ -264,7 +262,6 @@ class DittoDataset(data.Dataset):
     
         return know_sent, pos, visible_matrix, seg
 
-    # @staticmethod
     def pad(self, batch):
         """Merge a list of dataset items into a train/test batch
         Args:

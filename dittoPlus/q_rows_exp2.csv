@@ -1,0 +1,5 @@
+Description,Rows Indices
+"Predicted results are all correct: Doduo Only, Doduo with EL (non-ka incorrect)","[1626, 2437]"
+Predicted results by Doduo with EL is incorrect,"[682, 1619, 1682, 1724]"
+Predicted results by Doduo is incorrect,"[694, 821, 956, 997, 1457]"
+Predicted results by both methods are incorrect,"[602, 652, 828, 2027, 2274]"

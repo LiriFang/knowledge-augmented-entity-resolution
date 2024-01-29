@@ -8,6 +8,11 @@ import sys
 import torch
 import numpy as np
 import random
+import jsonlines
+import sklearn.metrics as metrics
+
+from scipy.special import softmax
+from torch.utils import data
 
 from tensorflow.keras import backend as K
 import tensorflow as tf
@@ -23,11 +28,74 @@ from ditto_light.summarize import Summarizer
 from ditto_light.knowledge import *
 from ditto_light.ditto import train
 
+
+def classify(sentence_pairs, model, save,
+             lm='distilbert',
+             max_len=512,
+             threshold=None):
+    """Apply the MRPC model.
+
+    Args:
+        sentence_pairs (list of str): the sequence pairs
+        model (MultiTaskNet): the model in pytorch
+        max_len (int, optional): the max sequence length
+        threshold (float, optional): the threshold of the 0's class
+
+    Returns:
+        list of float: the scores of the pairs
+    """
+    inputs = sentence_pairs
+    # print('max_len =', max_len)
+   
+    dataset = DittoDataset(inputs,
+                           max_len=max_len,
+                           lm=lm)
+    padder = dataset.pad
+    # print(dataset[0])
+    iterator = data.DataLoader(dataset=dataset,
+                            #    batch_size=len(dataset),
+                               batch_size=32,
+                               shuffle=False,
+                               num_workers=0,
+                               collate_fn=padder
+                               )
+                            #    collate_fn=DittoDataset.pad)
+    
+    enc = []
+    # prediction
+    all_probs = []
+    all_logits = []
+
+    with torch.no_grad():
+        # print('Classification')
+        for i, batch in enumerate(iterator):
+            if len(batch) == 2:
+                x, y = batch
+                logits = model(x, save=save)
+            elif len(batch) == 4:
+                x, position_batch, visible_matrix_batch, y = batch
+                # visible_matrix_batch, position_batch = visible_matrix_batch.to(model.device), position_batch.to(model.device)
+                logits = model(x, vm=visible_matrix_batch, position_ids=position_batch, save=save)
+                del position_batch, visible_matrix_batch
+            enc.append(model.enc)
+            probs = logits.softmax(dim=1)[:, 1]
+            all_probs += probs.cpu().numpy().tolist()
+            all_logits += logits.cpu().numpy().tolist()
+        enc = np.concatenate(enc)
+    
+    if threshold is None:
+        threshold = 0.5
+
+    pred = [1 if p > threshold else 0 for p in all_probs]
+
+    return pred, all_logits, enc
+
+
 if __name__=="__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--task", type=str, default="Dirty/DBLP-GoogleScholar")
+    parser.add_argument("--task", type=str, default="Structured/DBLP-ACM")
     parser.add_argument("--run_id", type=int, default=0)
-    parser.add_argument("--batch_size", type=int, default=8)
+    parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--max_len", type=int, default=512)
     parser.add_argument("--lr", type=float, default=3e-5)
     parser.add_argument("--n_epochs", type=int, default=20)
@@ -39,7 +107,7 @@ if __name__=="__main__":
     parser.add_argument("--da", type=str, default=None)
     parser.add_argument("--alpha_aug", type=float, default=0.8)
     parser.add_argument("--dk", type=str, default=None)
-    parser.add_argument("--prompt", type=int, default=0)
+    parser.add_argument("--prompt", type=int, default=1)
     parser.add_argument("--summarize", dest="summarize", action="store_true")
     parser.add_argument("--size", type=int, default=None)
     parser.add_argument("--device", type=str, default='cuda', help='cpu or cuda')
@@ -69,47 +137,77 @@ if __name__=="__main__":
     configs = {conf['name'] : conf for conf in configs}
     config = configs[task]
 
-    trainset = config['trainset']
-    validset = config['validset']
-    testset = config['testset']
-    if hp.dk == 'doduo':
-        trainset = trainset+'.doduo'
-        testset = testset + '.doduo'
-        validset = validset+ '.doduo'
+    trainset_input = config['trainset']
+    validset_input = config['validset']
+    testset_input = config['testset']
 
     # summarize the sequences up to the max sequence length
     if hp.summarize:
         summarizer = Summarizer(config, lm=hp.lm)
-        trainset = summarizer.transform_file(trainset, max_len=hp.max_len, overwrite=hp.overwrite)
-        validset = summarizer.transform_file(validset, max_len=hp.max_len, overwrite=hp.overwrite)
-        testset = summarizer.transform_file(testset, max_len=hp.max_len, overwrite=hp.overwrite)
+        trainset_input = summarizer.transform_file(trainset_input, max_len=hp.max_len, overwrite=True)
+        validset_input = summarizer.transform_file(validset_input, max_len=hp.max_len, overwrite=True)
+        testset_input = summarizer.transform_file(testset_input, max_len=hp.max_len, overwrite=True)
+    
+    # out_fn = input_fn + f'.prompt_type{prompt_type}.sherlock.dk'
+    if hp.dk == 'sherlock':
+        trainset = trainset_input + f'.prompt_type{hp.prompt}.sherlock.dk'
+        testset = testset_input + f'.prompt_type{hp.prompt}.sherlock.dk'
+        validset = validset_input + f'.prompt_type{hp.prompt}.sherlock.dk'
+    elif hp.dk == None:
+        trainset = trainset_input
+        validset = validset_input
+        testset = testset_input
+    elif hp.dk == 'doduo':
+        trainset = trainset_input + f'.doduo'
+        testset = testset_input + f'.doduo'
+        validset = validset_input + f'.doduo'
+    elif hp.dk == 'entityLinking':
+        trainset = trainset_input + f'.refined'
+        testset = testset_input + f'.refined'
+        validset = validset_input + f'.refined'
+    # TODO: what's the extension for EL- file?
 
+    
+    logging_info = {
+    'dataset-path': testset,
+    'hyperparams': {
+        'prompt': hp.prompt,
+        'batch_size': hp.batch_size,
+        'max_len': hp.max_len,
+        'lr': hp.lr,
+        'kbert': hp.kbert
 
-    # if hp.ct is not None:
-    #     pass
-
-    if hp.dk is not None and hp.dk != "doduo":
+    },
+    'rows':[
+    ],
+    # 'ground_truth':,
+    # 'pred_result':,
+    # 'matching_conf':,
+    }
+    # row: {'left': ..., 'right':..., 'ground_truth':0, 'pred_result':0, 'matching_conf':...}
+    if os.path.exists(trainset):
+        print(f"The file '{trainset}' exists already.")
+    else:
+        print(f"The file '{trainset}' does not exist.")
+        print(f"Using DK Injector: {hp.dk}")
         if hp.dk == 'product':
             injector = ProductDKInjector(config, hp.dk)
         elif hp.dk == 'entityLinking':
             injector = EntityLinkingDKInjector(config, hp.dk)
         elif hp.dk == 'sherlock':
             injector = SherlockDKInjector(config, hp.dk)
-            #todo connect sherlock with k-bert
         else:
             injector = GeneralDKInjector(config, hp.dk)
 
-    trainset= injector.transform_file(trainset, overwrite=hp.overwrite, fname=f"train_{config['name']}",prompt_type=hp.prompt)
-    validset= injector.transform_file(validset, overwrite=hp.overwrite,fname=f"valid_{config['name']}",prompt_type=hp.prompt)
-    testset= injector.transform_file(testset, overwrite=hp.overwrite,fname=f"test_{config['name']}",prompt_type=hp.prompt)
+        print(f"param overwrite: {hp.overwrite}")
+        print(f"trainset_input: {trainset_input}")
+        print(f"trainset: {trainset}")
+        trainset= injector.transform_file(trainset_input, trainset, overwrite=hp.overwrite,prompt_type=hp.prompt)
+        validset= injector.transform_file(validset_input, validset, overwrite=hp.overwrite,prompt_type=hp.prompt)
+        testset= injector.transform_file(testset_input, testset, overwrite=hp.overwrite,prompt_type=hp.prompt)
     
-    # add visible matrix by K-bert
-
-
-
-    # load train/dev/test sets
-    # print(hp.kbert)
-    # raise NotImplementedError
+    #load train/dev/test sets
+    print(f"Reading training data from: {trainset}")
     train_dataset = DittoDataset(trainset,
                                    lm=hp.lm,
                                    max_len=hp.max_len,
@@ -125,10 +223,67 @@ if __name__=="__main__":
                                    da=hp.da,
                                    kbert=hp.kbert)
 
-
-
     # train and evaluate the model
-    train(train_dataset,
+    model = train(train_dataset,
           valid_dataset,
           test_dataset,
           run_tag, hp)
+    
+
+    # predict the model
+    # batch processing
+    def process_batch(rows, pairs, save , writer, logs):
+        predictions, logits, vectors = classify(rows, model, save=save, lm=hp.lm,
+                                        max_len=hp.max_len,
+                                        threshold=0.5)
+        assert len(rows) == len(vectors)
+        scores = softmax(logits, axis=1)
+        for idx, (pair, pred, score) in enumerate(zip(pairs, predictions, scores)):
+            row_v = rows[idx]
+            s1, s2, label = row_v.strip().split('\t')
+            output = {'left': pair[0], 'right': pair[1],
+                'match': pred,
+                'match_confidence': score[int(pred)]}
+            row = {
+                'row_index': idx,
+                'left': pair[0], 'right': pair[1], 
+                'vectors': vectors[idx].tolist(),
+                'ground_truth':label,
+                'pred_result': pred,
+                'match_confidence': score[int(pred)]}
+            logs.append(row)
+            writer.write(output)
+    
+    start_time = time.time()
+    os.makedirs(f'./output/{hp.task}', exist_ok=True)
+    save = True
+    with jsonlines.open(f"./output/{hp.task}/result.jsonl", mode='w') as writer:
+        pairs = test_dataset.pairs # (e1, e2)
+        rows = test_dataset.rows # (e1, e2, \t, label)
+        if len(pairs) == hp.batch_size:
+            process_batch(rows, pairs, save, writer, logging_info['rows'])
+            pairs.clear()
+            rows.clear()
+
+        if len(pairs) > 0:
+            process_batch(rows, pairs, save, writer, logging_info['rows'])
+
+    run_time = time.time() - start_time
+    run_tag = '%s_lm=%s_dk=%s_su=%s' % (config['name'], hp.lm, str(hp.dk != None), str(hp.summarize != None))
+    os.system('echo %s %f >> log.txt' % (run_tag, run_time))
+    
+    if hp.prompt == 0:
+        p_name = 'kbert'
+    elif hp.prompt == 1:
+        p_name = 'space'
+    elif hp.prompt == 2:
+        p_name = 'slash'
+    
+    
+    json_object = json.dumps(logging_info, indent=4)
+    os.makedirs(f'./output/{hp.task}/{hp.dk}/prompt={p_name}', exist_ok=True)
+    with open(f"./output/{hp.task}/{hp.dk}/prompt={p_name}/result.json", mode='w') as f:
+        f.write(json_object)
+    # with jsonlines.open(f"./output/{hp.task}/{hp.dk}/prompt={p_name}/result.jsonl", mode='w') as tkaer:
+    #     tkaer.write(logging_info)
+    

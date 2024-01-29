@@ -27,9 +27,9 @@
     "name": "computers",
     "task_type": "classification",
     "vocab": ["0", "1"],
-    "trainset": "../data/ditto/wdc/computers/train.txt.medium",
-    "validset": "../data/ditto/wdc/computers/valid.txt.medium",
-    "testset": "../data/ditto/wdc/computers/test.txt"
+    "trainset": "../data/wdc/computers/train.txt.medium",
+    "validset": "../data/wdc/computers/valid.txt.medium",
+    "testset": "../data/wdc/computers/test.txt"
   },
   {
     "name": "Structured/DBLP-GoogleScholar",
@@ -39,12 +39,44 @@
     "validset": "../data/er_magellan/Structured/DBLP-GoogleScholar/valid.txt",
     "testset": "../data/er_magellan/Structured/DBLP-GoogleScholar/test.txt"
     },
-  {
-    "name": "Structured/DBLP-ACM",
-    "task_type": "classification",
-    "vocab": ["0", "1"],
-    "trainset": "../data/er_magellan/Structured/DBLP-ACM/train.txt",
-    "validset": "../data/er_magellan/Structured/DBLP-ACM/valid.txt",
-    "testset": "../data/er_magellan/Structured/DBLP-ACM/test.txt"
-    }
+    {
+      "name": "Structured/iTunes-Amazon",
+      "task_type": "classification",
+      "vocab": ["0", "1"],
+      "trainset": "../data/er_magellan/Structured/iTunes-Amazon/train.txt",
+      "validset": "../data/er_magellan/Structured/iTunes-Amazon/valid.txt",
+      "testset": "../data/er_magellan/Structured/iTunes-Amazon/test.txt"
+    },
+    {
+      "name": "Structured/DBLP-ACM",
+      "task_type": "classification",
+      "vocab": ["0", "1"],
+      "trainset": "../data/er_magellan/Structured/DBLP-ACM/train.txt",
+      "validset": "../data/er_magellan/Structured/DBLP-ACM/valid.txt",
+      "testset": "../data/er_magellan/Structured/DBLP-ACM/test.txt"
+      },
+      {
+        "name": "Structured/DBLP-ACM-merge",
+        "task_type": "classification",
+        "vocab": ["0", "1"],
+        "trainset": "../data/er_magellan/Structured/DBLP-ACM/train.txt.doduo",
+        "validset": "../data/er_magellan/Structured/DBLP-ACM/valid.txt.doduo",
+        "testset": "../data/er_magellan/Structured/DBLP-ACM/test.txt.doduo"
+      },
+      {
+        "name": "Structured/DBLP-ACM-doduo",
+        "task_type": "classification",
+        "vocab": ["0", "1"],
+        "trainset": "../data/er_magellan/Structured/DBLP-ACM/train.txt.doduo",
+        "validset": "../data/er_magellan/Structured/DBLP-ACM/valid.txt.doduo",
+        "testset": "../data/er_magellan/Structured/DBLP-ACM/test.txt.doduo"
+      },
+      {
+        "name": "Structured/DBLP-ACM-sherlock",
+        "task_type": "classification",
+        "vocab": ["0", "1"],
+        "trainset": "../data/er_magellan/Structured/DBLP-ACM/train.txt.prompt_type1.sherlock.dk",
+        "validset": "../data/er_magellan/Structured/DBLP-ACM/valid.txt.prompt_type1.sherlock.dk",
+        "testset": "../data/er_magellan/Structured/DBLP-ACM/test.txt.prompt_type1.sherlock.dk"
+      }
 ]

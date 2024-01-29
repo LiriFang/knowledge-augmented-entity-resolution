@@ -1,0 +1,4 @@
+Structured/iTunes-Amazon_lm=roberta_dk=True_su=True 0.688720
+Structured/iTunes-Amazon_lm=roberta_dk=True_su=True 0.681190
+Structured/iTunes-Amazon_lm=roberta_dk=True_su=True 0.778177
+Structured/iTunes-Amazon_lm=roberta_dk=True_su=True 0.700604
