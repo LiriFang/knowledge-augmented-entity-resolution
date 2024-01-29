@@ -172,11 +172,10 @@ dittoPlus/data
 events.out.tfevents*
 temporary_*.csv
 *.dk
-<<<<<<< HEAD
 
 lanl2/sherlock-project
 sherlock/
-=======
+
 dittoPlus/par_vec_trained_*
 glove.6B.50d.txt
 
@@ -184,15 +183,20 @@ glove.6B.50d.txt
 ._data
 ._.DS_Store
 
-*.csv
+# *.csv
 *.parquet
 *.out
 *.pkl*
 *.h5
 *.tsv
+*.jsonl
+*.json
 model_files/classes_sherlock.npy
 
 *.slurm
 
 dittoPlus/sbatch_examples.sh
->>>>>>> main
+temporary_1.csv
+temporary_2.csv
+.gitignore
+dittoPlus/log.txt
