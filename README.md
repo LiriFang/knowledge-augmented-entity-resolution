@@ -1,4 +1,4 @@
-# data-preparator-for-EM
+# T-KAER: Transparency-enabled Knowledge-Augmented Entity Resolution Framework
 ## Environment Setup 
 First, install dependencies: 
 ```
@@ -9,14 +9,21 @@ Second, install [Refined](https://github.com/amazon-science/ReFinED) for entity 
 ```
 pip install https://github.com/amazon-science/ReFinED/archive/refs/tags/V1.zip
 ```
-## Commands and HyperParameters
-Entity Resolution by Pre-trained Language Models (PLMs) can be started by running train_ditto.py script under `dittoPlus` folder.
+## Experiments: 
+- [Experiment I]: Run KAER and Documenting Experimental Process
+- [Experiment II]: Evaluating and Analyzing ER results  
+
+#### Experiment I: Run KAER and Documenting Experimental Process
+
+1. Commands and HyperParameters
+
+Entity Resolution by Pre-trained Language Models (PLMs) can be started by running `train_ditto.py` script under `dittoPlus` folder.
 
 The command and key hyperparameters can be tuned by users are as follows:
 
 ```
 $ cd dittoPlus
-$ python train_ditto.py --task {Dataset name} --dk {knowledge augmentation methods} --prompt {0,1,2} --kbert {True, False}
+$ python train_ditto.py --task {*} --dk {*} --prompt {*} --kbert {*}
 ```
 
 * `task`: dataset folder name (trainset, validset, and testset), all meta-information documented in `dittoPlus/configs.json`. 
@@ -24,16 +31,19 @@ $ python train_ditto.py --task {Dataset name} --dk {knowledge augmentation metho
 * `prompt`: prompting methods name: {default: 1 (space), 0: kbert, 2 (slash)}
 * `kbert`: using kbert (constrained pruning method) or not: {default: False, True}
 
-## Running Experiments 
+2. Experiment Result: Log File Generated
 
+After the experiment, one log file will be generated and can be found under this directory: `dittoPlus/output/`.
 
+#### Experiment II: Evaluating and Analyzing ER results  
+1. Evaluating script based on the log files: `dittoPlus/ev_results.py`
+2. Compare the performance across the KA methods
 ## Directory and Descriptions 
 | Directory | Contents Descriptions |
 | ----------- | ----------- |
 | data | Dataset from The ER-Magellan Benchmark |
-| dittoPlus | Text |
 | environment.yml | All Dependencies Required to Run the Experiments {sherlock} |
-| dittoPlus | Text |
+| dittoPlus | ditto + Domain Knowledge |
 
 
 ## Related Papers
