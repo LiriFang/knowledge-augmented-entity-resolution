@@ -14,7 +14,7 @@ Third, install [Doduo](https://github.com/megagonlabs/doduo.git) for column anno
 ```
 pip install https://github.com/megagonlabs/doduo.git
 ```
-Example scripts to implement doduo: [`DittoPlus/doduo_scripts/doduo_annotation.py`](https://github.com/LiriFang/data-preparator-for-EM/blob/main/dittoPlus/doduo-scripts/doduo_annotation.py).
+Example scripts to implement Doduo: [`DittoPlus/doduo_scripts/doduo_annotation.py`](https://github.com/LiriFang/data-preparator-for-EM/blob/main/dittoPlus/doduo-scripts/doduo_annotation.py).
 ## Experiments: 
 - [Experiment I]: Run KAER and Documenting Experimental Process
 - [Experiment II]: Evaluating and Analyzing ER results  
