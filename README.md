@@ -48,6 +48,7 @@ After the experiment, one log file will be generated and can be found under this
 
 ## Related Papers
 [1] Fang, L., Li, L., Liu, Y., Torvik, V. I., & Ludäscher, B. (2023). KAER: A Knowledge Augmented Pre-Trained Language Model for Entity Resolution. arXiv preprint arXiv:2301.04770.
+
 [2] Li, L., Fang, L., Liu, Y., Torvik, V. I., & Ludäscher, B. (2024). T-KAER: Transparency-enhanced Pre-Trained Language Model for Entity Resolution. IDCC, 18.
 
 
